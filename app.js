@@ -28,8 +28,22 @@ const state = {
   excelRawData: [],
   excelHeaders: [],
   excelFileName: '',
-  isExcelLayerVisible: true
+  isExcelLayerVisible: true,
+  // Cek Mitra mode
+  mitraMode: false,
+  prevBasemap: null,
+  mitraList: [],
+  mitraDesaCounts: new Map(),
+  mitraSource: '',
+  currentMitraRows: [],
+  // Sample SLS upload
+  sampel: null, // { fileName, entries, matched, failed }
+  sampelLayer: null
 };
+
+// Optional published CSV (a sanitized sheet tab). Leave empty to let users load
+// the partner file in their own browser instead; see README.
+const MITRA_DATA_URL = '';
 
 // UI Elements
 const DOM = {
@@ -120,7 +134,51 @@ const DOM = {
   btnToggleExcelVisibility: document.getElementById('btnToggleExcelVisibility'),
   excelEyeIcon: document.getElementById('excelEyeIcon'),
   btnClearExcelPoints: document.getElementById('btnClearExcelPoints'),
-  btnReopenExcelModal: document.getElementById('btnReopenExcelModal')
+  btnReopenExcelModal: document.getElementById('btnReopenExcelModal'),
+  // Cek Mitra
+  btnToggleMitra: document.getElementById('btnToggleMitra'),
+  btnToggleMitraLabel: document.getElementById('btnToggleMitraLabel'),
+  mitraBanner: document.getElementById('mitraBanner'),
+  mitraBannerText: document.getElementById('mitraBannerText'),
+  mitraLegend: document.getElementById('mitraLegend'),
+  btnExitMitra: document.getElementById('btnExitMitra'),
+  btnLoadMitra: document.getElementById('btnLoadMitra'),
+  btnLoadMitraLabel: document.getElementById('btnLoadMitraLabel'),
+  mitraFileInput: document.getElementById('mitraFileInput'),
+  mitraDataMeta: document.getElementById('mitraDataMeta'),
+  mitraSection: document.getElementById('mitraSection'),
+  mitraSummary: document.getElementById('mitraSummary'),
+  mitraSubSummary: document.getElementById('mitraSubSummary'),
+  mitraSearch: document.getElementById('mitraSearch'),
+  mitraList: document.getElementById('mitraList'),
+  btnCopyMitra: document.getElementById('btnCopyMitra'),
+  // Sample SLS
+  btnOpenSampelModal: document.getElementById('btnOpenSampelModal'),
+  modalSampel: document.getElementById('modalSampel'),
+  btnCloseSampelModal: document.getElementById('btnCloseSampelModal'),
+  sampelDropzone: document.getElementById('sampelDropzone'),
+  sampelFileInput: document.getElementById('sampelFileInput'),
+  btnDownloadSampelTemplate: document.getElementById('btnDownloadSampelTemplate'),
+  sampelUploadSection: document.getElementById('sampelUploadSection'),
+  sampelError: document.getElementById('sampelError'),
+  sampelResultSection: document.getElementById('sampelResultSection'),
+  sampelSummary: document.getElementById('sampelSummary'),
+  sampelFailedBox: document.getElementById('sampelFailedBox'),
+  sampelFailedTitle: document.getElementById('sampelFailedTitle'),
+  sampelFailedList: document.getElementById('sampelFailedList'),
+  btnDownloadSampelFailed: document.getElementById('btnDownloadSampelFailed'),
+  sampelKecFilter: document.getElementById('sampelKecFilter'),
+  sampelList: document.getElementById('sampelList'),
+  sampelFooter: document.getElementById('sampelFooter'),
+  btnSampelViewMap: document.getElementById('btnSampelViewMap'),
+  btnSampelReplace: document.getElementById('btnSampelReplace'),
+  btnSampelClear2: document.getElementById('btnSampelClear2'),
+  sampelWidget: document.getElementById('sampelWidget'),
+  sampelWidgetTitle: document.getElementById('sampelWidgetTitle'),
+  btnSampelList: document.getElementById('btnSampelList'),
+  btnSampelClear: document.getElementById('btnSampelClear'),
+  sampelInfo: document.getElementById('sampelInfo'),
+  sampelInfoText: document.getElementById('sampelInfoText')
 };
 
 /**
@@ -188,7 +246,7 @@ function isSatelliteBasemap() {
   return state.activeBasemap === 'google-satellite' || state.activeBasemap === 'satellite' || state.activeBasemap === 'hybrid';
 }
 
-function setBasemap(type) {
+function setBasemap(type, { silent = false } = {}) {
   if (!state.basemapLayers[type]) return;
 
   // Remove all current basemaps
@@ -223,7 +281,11 @@ function setBasemap(type) {
     state.highlightLayer.bringToFront();
   }
 
-  showToast(`Peta dasar diubah ke: ${getBasemapLabel(type)}`, 'info');
+  const radio = DOM.basemapOptions && DOM.basemapOptions.querySelector(`input[value="${type}"]`);
+  if (radio) radio.checked = true;
+
+  applyLayerOrder();
+  if (!silent) showToast(`Peta dasar diubah ke: ${getBasemapLabel(type)}`, 'info');
 }
 
 function getBasemapLabel(type) {
@@ -381,7 +443,27 @@ const SATELLITE_GROUP_HIGHLIGHT_STYLE = {
   fillOpacity: 0.4
 };
 
-function getSlsNormalStyle() {
+const MITRA_STYLE_HAS = {
+  fillColor: '#14b8a6',
+  weight: 2,
+  opacity: 1,
+  color: '#0f766e',
+  fillOpacity: 0.3
+};
+
+const MITRA_STYLE_NONE = {
+  fillColor: '#94a3b8',
+  weight: 1,
+  opacity: 0.8,
+  color: '#64748b',
+  fillOpacity: 0.06
+};
+
+function getSlsNormalStyle(feature) {
+  if (state.mitraMode && state.mitraList.length > 0 && feature) {
+    const p = feature.properties;
+    return state.mitraDesaCounts.has(`${p.kdkec}|${p.kddesa}`) ? MITRA_STYLE_HAS : MITRA_STYLE_NONE;
+  }
   return isSatelliteBasemap() ? SATELLITE_STYLE : NORMAL_STYLE;
 }
 
@@ -496,8 +578,8 @@ function selectFeature(feature, clickLatLng = null, gpsAccuracy = null) {
 
   const isSat = isSatelliteBasemap();
 
-  // Draw highlight polygon
-  state.highlightLayer = L.geoJSON(feature, {
+  // Draw highlight polygon (in Cek Mitra mode every polygon of the same SLS is shown)
+  state.highlightLayer = L.geoJSON(state.mitraMode ? siblingFeatures(feature) : feature, {
     style: isSat ? SATELLITE_HIGHLIGHT_STYLE : NORMAL_HIGHLIGHT_STYLE
   }).addTo(state.map);
 
@@ -547,6 +629,10 @@ function selectFeature(feature, clickLatLng = null, gpsAccuracy = null) {
 
   // Store data for share
   DOM.btnShareInfo.dataset.shareText = `📍 Informasi SLS Kepulauan Selayar:\n• SLS: ${slsCode}${p.nmsls || '-'}\n• Wilayah: ${desaCode}Desa ${p.nmdesa || '-'}, ${kecCode}Kec ${p.nmkec || '-'}\n• ID SLS: ${p.idsls}\n• Titik: ${displayLat}, ${displayLng}\n• Maps: https://www.google.com/maps?q=${displayLat},${displayLng}`;
+
+  renderSampelInfo(feature);
+  renderMitraSection(feature);
+  applyLayerOrder();
 
   // Open Drawer only (no redundant on-map floating badge)
   openDrawer();
@@ -2029,6 +2115,539 @@ function escapeHtml(str) {
 }
 
 /**
+ * 14. Shared helpers for Cek Mitra & sample SLS
+ */
+function openModalEl(el) {
+  el.classList.remove('hidden-modal');
+  el.classList.add('show-modal');
+}
+
+function closeModalEl(el) {
+  el.classList.remove('show-modal');
+  el.classList.add('hidden-modal');
+}
+
+function applyLayerOrder() {
+  if (state.sampelLayer) state.sampelLayer.bringToFront();
+  if (state.highlightLayer) state.highlightLayer.bringToFront();
+  if (state.excelPointsLayer && state.excelPointsLayer.bringToFront) state.excelPointsLayer.bringToFront();
+}
+
+function getFeaturesById() {
+  if (!state.featuresById) {
+    state.featuresById = new Map();
+    state.featuresWithBbox.forEach(({ feature }) => {
+      const id = SlsLib.canonicalId(feature.properties);
+      if (!state.featuresById.has(id)) state.featuresById.set(id, []);
+      state.featuresById.get(id).push(feature);
+    });
+  }
+  return state.featuresById;
+}
+
+function siblingFeatures(feature) {
+  return getFeaturesById().get(SlsLib.canonicalId(feature.properties)) || [feature];
+}
+
+function copyText(text, okMessage) {
+  const done = () => showToast(okMessage, 'success');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, () => showToast('Gagal menyalin. Salin manual dari layar.', 'error'));
+    return;
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    done();
+  } catch (e) {
+    showToast('Gagal menyalin. Salin manual dari layar.', 'error');
+  }
+  document.body.removeChild(ta);
+}
+
+function hasSpreadsheetExt(file) {
+  return ['xlsx', 'xls', 'csv'].includes((file.name.split('.').pop() || '').toLowerCase());
+}
+
+function readWorkbookSheets(file) {
+  return new Promise((resolve, reject) => {
+    if (typeof XLSX === 'undefined') {
+      reject(new Error('Pustaka Excel belum termuat. Periksa koneksi internet lalu muat ulang halaman.'));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('File tidak bisa dibaca.'));
+    reader.onload = (ev) => {
+      try {
+        const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+        resolve(wb.SheetNames.map((name) => ({
+          name,
+          rows: XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: '', raw: false, blankrows: true })
+        })));
+      } catch (err) {
+        reject(new Error('File rusak atau formatnya tidak didukung.'));
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+/**
+ * 15. Cek Mitra mode
+ */
+function initMitra() {
+  DOM.btnToggleMitra.addEventListener('click', () => (state.mitraMode ? exitMitraMode() : enterMitraMode()));
+  DOM.btnExitMitra.addEventListener('click', exitMitraMode);
+  DOM.btnLoadMitra.addEventListener('click', () => DOM.mitraFileInput.click());
+  DOM.mitraFileInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) handleMitraFile(file);
+    e.target.value = '';
+  });
+  DOM.mitraSearch.addEventListener('input', renderMitraCards);
+  DOM.btnCopyMitra.addEventListener('click', copyMitraList);
+}
+
+function enterMitraMode() {
+  if (!state.isGeojsonLoaded) {
+    showToast('Tunggu peta selesai dimuat.', 'info');
+    return;
+  }
+  state.mitraMode = true;
+  state.prevBasemap = state.activeBasemap;
+  setBasemap('osm', { silent: true });
+  state.geojsonLayer.setStyle(getSlsNormalStyle);
+  updateMitraUi();
+  if (MITRA_DATA_URL && state.mitraList.length === 0) loadMitraFromUrl();
+  if (state.selectedFeature) renderMitraSection(state.selectedFeature);
+}
+
+function exitMitraMode() {
+  state.mitraMode = false;
+  if (state.activeBasemap === 'osm' && state.prevBasemap && state.prevBasemap !== 'osm') {
+    setBasemap(state.prevBasemap, { silent: true });
+  }
+  state.prevBasemap = null;
+  state.geojsonLayer.setStyle(getSlsNormalStyle);
+  updateMitraUi();
+  DOM.mitraSection.classList.add('hidden');
+  if (state.selectedFeature && DOM.bottomSheet.classList.contains('show-drawer')) {
+    selectFeature(state.selectedFeature, state.selectedCenterLatLng);
+  }
+}
+
+function updateMitraUi() {
+  const on = state.mitraMode;
+  const loaded = state.mitraList.length > 0;
+  DOM.btnToggleMitra.setAttribute('aria-pressed', String(on));
+  DOM.btnToggleMitraLabel.textContent = on ? 'Keluar Cek Mitra' : 'Cek Mitra';
+  DOM.btnToggleMitra.classList.toggle('ring-2', on);
+  DOM.btnToggleMitra.classList.toggle('ring-teal-300', on);
+  DOM.mitraBanner.classList.toggle('hidden', !on);
+  DOM.mitraLegend.classList.toggle('hidden', !loaded);
+  DOM.mitraBannerText.textContent = loaded
+    ? 'Mode Cek Mitra aktif. Ketuk wilayah di peta untuk melihat mitranya.'
+    : 'Mode Cek Mitra aktif. Muat data mitra dulu, lalu ketuk wilayah di peta.';
+  DOM.btnLoadMitraLabel.textContent = loaded ? 'Ganti Data Mitra' : 'Muat Data Mitra';
+  DOM.mitraDataMeta.textContent = loaded ? `${state.mitraList.length} mitra · ${state.mitraSource}` : '';
+}
+
+function setMitraData(list, source) {
+  state.mitraList = list;
+  state.mitraSource = source;
+  state.mitraDesaCounts = new Map();
+  list.forEach((m) => {
+    const key = `${m.kdkec}|${m.kddesa}`;
+    state.mitraDesaCounts.set(key, (state.mitraDesaCounts.get(key) || 0) + 1);
+  });
+  if (state.geojsonLayer) state.geojsonLayer.setStyle(getSlsNormalStyle);
+  applyLayerOrder();
+  updateMitraUi();
+  if (state.selectedFeature) renderMitraSection(state.selectedFeature);
+}
+
+function pickBestMitraSheet(sheets) {
+  let best = null;
+  sheets.forEach((sh) => {
+    const r = SlsLib.parseMitra(sh.rows);
+    if (r.mitra.length > (best ? best.mitra.length : 0)) best = r;
+  });
+  return best;
+}
+
+async function handleMitraFile(file) {
+  if (!hasSpreadsheetExt(file)) {
+    showToast('Format file harus .xlsx, .xls, atau .csv', 'error');
+    return;
+  }
+  try {
+    const sheets = await readWorkbookSheets(file);
+    const best = pickBestMitraSheet(sheets);
+    if (!best) {
+      showToast('File ini tidak berisi data mitra. Pastikan ada kolom Nama Lengkap dan Alamat Desa/Kel.', 'error');
+      return;
+    }
+    setMitraData(best.mitra, file.name);
+    showToast(`${best.mitra.length} mitra dimuat. Data hanya ada di perangkat Anda.`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function loadMitraFromUrl() {
+  try {
+    const res = await fetch(MITRA_DATA_URL, { cache: 'no-cache' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const wb = XLSX.read(await res.text(), { type: 'string' });
+    const sheets = wb.SheetNames.map((name) => ({
+      name,
+      rows: XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: '', raw: false, blankrows: true })
+    }));
+    const best = pickBestMitraSheet(sheets);
+    if (!best) throw new Error('format data tidak dikenali');
+    setMitraData(best.mitra, 'data terbaru');
+  } catch (err) {
+    showToast('Data mitra belum bisa dimuat. Peta SLS tetap bisa dipakai. Anda bisa memuat file sendiri.', 'error');
+  }
+}
+
+const MITRA_LEVELS = {
+  tepat: { label: 'Tepat di SLS ini', cls: 'bg-teal-500/20 text-teal-200 border-teal-500/40' },
+  dusun: { label: 'Dusun cocok', cls: 'bg-sky-500/20 text-sky-200 border-sky-500/40' },
+  desa: { label: 'Di desa ini', cls: 'bg-slate-600/40 text-slate-200 border-slate-500/50' }
+};
+
+function renderMitraSection(feature) {
+  if (!state.mitraMode) {
+    DOM.mitraSection.classList.add('hidden');
+    return;
+  }
+  DOM.mitraSection.classList.remove('hidden');
+  const p = feature.properties;
+  const desa = p.nmdesa || '-';
+
+  if (state.mitraList.length === 0) {
+    state.currentMitraRows = [];
+    DOM.mitraSummary.textContent = 'Data mitra belum dimuat';
+    DOM.mitraSubSummary.textContent = 'Ketuk "Muat Data Mitra" di bagian atas peta, lalu pilih file Excel daftar mitra.';
+    DOM.mitraSearch.classList.add('hidden');
+    DOM.btnCopyMitra.classList.add('hidden');
+    DOM.mitraList.innerHTML = '';
+    return;
+  }
+
+  const rows = SlsLib.mitraForSls(state.mitraList, p);
+  state.currentMitraRows = rows;
+  const n = { tepat: 0, dusun: 0, desa: 0 };
+  rows.forEach((r) => n[r.level]++);
+
+  if (rows.length === 0) {
+    DOM.mitraSummary.textContent = `Belum ada mitra tercatat di Desa ${desa}`;
+    DOM.mitraSubSummary.textContent = 'Coba lihat desa tetangga.';
+  } else {
+    DOM.mitraSummary.textContent = `${rows.length} mitra di Desa ${desa}`;
+    const parts = [];
+    if (n.tepat) parts.push(`${n.tepat} tepat di SLS ini`);
+    if (n.dusun) parts.push(`${n.dusun} dusun cocok`);
+    if (n.desa) parts.push(`${n.desa} lainnya di desa ini`);
+    let sub = parts.join(' · ');
+    if (!n.tepat) sub += '. Data belum mencatat RT/SLS tiap mitra, jadi daftar ini per desa.';
+    DOM.mitraSubSummary.textContent = sub;
+  }
+  DOM.mitraSearch.value = '';
+  DOM.mitraSearch.classList.toggle('hidden', rows.length <= 8);
+  DOM.btnCopyMitra.classList.toggle('hidden', rows.length === 0);
+  renderMitraCards();
+}
+
+function renderMitraCards() {
+  const q = SlsLib.normalizeText(DOM.mitraSearch.value);
+  const rows = q
+    ? state.currentMitraRows.filter((r) => SlsLib.normalizeText(r.mitra.nama).includes(q))
+    : state.currentMitraRows;
+  if (state.currentMitraRows.length > 0 && rows.length === 0) {
+    DOM.mitraList.innerHTML = '<p class="text-xs text-slate-400 py-2">Tidak ada nama yang cocok.</p>';
+    return;
+  }
+  DOM.mitraList.innerHTML = rows.map(({ mitra: m, level }) => {
+    const lv = MITRA_LEVELS[level];
+    const chips = [];
+    if (m.capi) chips.push('Pengalaman CAPI');
+    if (m.android) chips.push('HP Android');
+    if (m.motor) chips.push('Bisa motor');
+    if (m.pengalaman.length) chips.push(`Pernah: ${m.pengalaman.join(', ')}`);
+    return `<div class="mitra-card">
+      <div class="flex items-start justify-between gap-2">
+        <span class="font-semibold text-slate-100 text-xs leading-snug">${escapeHtml(m.nama)}</span>
+        <span class="flex-shrink-0 px-1.5 py-0.5 rounded-full border text-[10px] font-semibold ${lv.cls}">${lv.label}</span>
+      </div>
+      <div class="text-[11px] text-slate-400 mt-0.5">${escapeHtml(m.posisi)}${m.alamat ? ' · ' + escapeHtml(m.alamat) : ''}</div>
+      ${chips.length ? `<div class="flex flex-wrap gap-1 mt-1">${chips.map((c) => `<span class="px-1.5 py-0.5 rounded-md bg-slate-700/60 text-[10px] text-slate-300">${escapeHtml(c)}</span>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function copyMitraList() {
+  const f = state.selectedFeature;
+  if (!f || state.currentMitraRows.length === 0) return;
+  const p = f.properties;
+  const lines = state.currentMitraRows.map(({ mitra: m, level }, i) =>
+    `${i + 1}. ${m.nama} - ${m.posisi}${m.alamat ? ` (${m.alamat})` : ''} [${MITRA_LEVELS[level].label}]`);
+  copyText(`Mitra ${p.nmsls}, Desa ${p.nmdesa}, Kec ${p.nmkec}\n${lines.join('\n')}`, 'Daftar mitra disalin.');
+}
+
+/**
+ * 16. Sample SLS upload (DSLS)
+ */
+const SAMPEL_STYLE = {
+  fillColor: '#c026d3',
+  fillOpacity: 0.4,
+  color: '#f0abfc',
+  weight: 3,
+  opacity: 1
+};
+
+function initSampel() {
+  DOM.btnOpenSampelModal.addEventListener('click', () => {
+    showSampelView(state.sampel ? 'result' : 'upload');
+    openModalEl(DOM.modalSampel);
+  });
+  DOM.btnCloseSampelModal.addEventListener('click', () => closeModalEl(DOM.modalSampel));
+  DOM.btnSampelList.addEventListener('click', () => {
+    showSampelView('result');
+    openModalEl(DOM.modalSampel);
+  });
+  DOM.btnSampelClear.addEventListener('click', clearSampel);
+  DOM.btnSampelClear2.addEventListener('click', clearSampel);
+  DOM.btnSampelReplace.addEventListener('click', () => showSampelView('upload'));
+  DOM.btnSampelViewMap.addEventListener('click', () => {
+    closeModalEl(DOM.modalSampel);
+    zoomToSampel();
+  });
+  DOM.btnDownloadSampelTemplate.addEventListener('click', downloadSampelTemplate);
+  DOM.btnDownloadSampelFailed.addEventListener('click', downloadSampelFailed);
+  DOM.sampelKecFilter.addEventListener('change', renderSampelList);
+
+  DOM.sampelDropzone.addEventListener('click', () => DOM.sampelFileInput.click());
+  DOM.sampelDropzone.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      DOM.sampelFileInput.click();
+    }
+  });
+  DOM.sampelFileInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) handleSampelFile(file);
+    e.target.value = '';
+  });
+  DOM.sampelDropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    DOM.sampelDropzone.classList.add('border-fuchsia-500/70');
+  });
+  DOM.sampelDropzone.addEventListener('dragleave', () => DOM.sampelDropzone.classList.remove('border-fuchsia-500/70'));
+  DOM.sampelDropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    DOM.sampelDropzone.classList.remove('border-fuchsia-500/70');
+    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) handleSampelFile(file);
+  });
+}
+
+function showSampelView(view) {
+  const result = view === 'result' && state.sampel;
+  DOM.sampelUploadSection.classList.toggle('hidden', !!result);
+  DOM.sampelResultSection.classList.toggle('hidden', !result);
+  DOM.sampelFooter.classList.toggle('hidden', !result);
+  if (!result) hideSampelError();
+}
+
+function showSampelError(message) {
+  DOM.sampelError.textContent = message;
+  DOM.sampelError.classList.remove('hidden');
+}
+
+function hideSampelError() {
+  DOM.sampelError.classList.add('hidden');
+  DOM.sampelError.textContent = '';
+}
+
+async function handleSampelFile(file) {
+  hideSampelError();
+  if (!hasSpreadsheetExt(file)) {
+    showSampelError('Format file harus .xlsx, .xls, atau .csv.');
+    return;
+  }
+  if (!state.isGeojsonLoaded) {
+    showSampelError('Peta belum selesai dimuat. Coba lagi sebentar lagi.');
+    return;
+  }
+
+  let sheets;
+  try {
+    sheets = await readWorkbookSheets(file);
+  } catch (err) {
+    showSampelError(err.message);
+    return;
+  }
+
+  // A workbook may hold several tabs; use the one that yields the most sample rows.
+  const first = state.geojsonData.features[0].properties;
+  const defaults = { kdprov: first.kdprov, kdkab: first.kdkab };
+  let best = null;
+  sheets.forEach((sh) => {
+    const parsed = SlsLib.parseDsls(sh.rows, defaults);
+    const better = parsed.entries.length > (best ? best.parsed.entries.length : 0) ||
+      (best && parsed.entries.length > 0 && parsed.entries.length === best.parsed.entries.length && /^dsls$/i.test(sh.name));
+    if (better) best = { sheet: sh.name, parsed };
+  });
+  if (!best) {
+    showSampelError('File ini tidak terbaca sebagai daftar SLS sampel. Pastikan ada kolom Kode SLS dan Kecamatan, atau unduh template.');
+    return;
+  }
+
+  const { matched, failed } = SlsLib.matchEntries(best.parsed.entries, state.geojsonData.features);
+  state.sampel = { fileName: file.name, total: best.parsed.entries.length, matched, failed };
+  state.sampelByKey = new Map();
+  matched.forEach((m) => state.sampelByKey.set(SlsLib.canonicalId(m.features[0].properties), m));
+
+  plotSampel();
+  renderSampelResult();
+  showSampelView('result');
+  if (matched.length > 0) {
+    showToast(`${matched.length} dari ${state.sampel.total} SLS sampel ditemukan.`, 'success');
+  }
+  if (state.selectedFeature) renderSampelInfo(state.selectedFeature);
+}
+
+function plotSampel() {
+  if (state.sampelLayer) {
+    state.map.removeLayer(state.sampelLayer);
+    state.sampelLayer = null;
+  }
+  const s = state.sampel;
+  const total = s ? s.matched.length : 0;
+  DOM.sampelWidget.classList.toggle('hidden', total === 0);
+  if (!s || total === 0) return;
+  const features = s.matched.flatMap((m) => m.features);
+  state.sampelLayer = L.geoJSON(features, { style: SAMPEL_STYLE, interactive: false }).addTo(state.map);
+  DOM.sampelWidgetTitle.textContent = `${total} SLS Sampel`;
+  applyLayerOrder();
+  zoomToSampel();
+}
+
+function zoomToSampel() {
+  if (state.sampelLayer) {
+    state.map.fitBounds(state.sampelLayer.getBounds(), { padding: [50, 50], animate: true });
+  }
+}
+
+function renderSampelResult() {
+  const s = state.sampel;
+  DOM.sampelSummary.textContent = `${s.matched.length} dari ${s.total} SLS sampel ditemukan dan disorot di peta.`;
+  if (s.failed.length > 0) {
+    DOM.sampelSummary.textContent = `${s.matched.length} dari ${s.total} SLS sampel ditemukan. ${s.failed.length} baris tidak cocok dengan peta.`;
+    DOM.sampelFailedBox.classList.remove('hidden');
+    DOM.sampelFailedTitle.textContent = `${s.failed.length} baris tidak cocok`;
+    DOM.sampelFailedList.innerHTML = s.failed.map(({ entry: e, reason }) =>
+      `<li>Baris ${e.rowNumber}: ${escapeHtml(e.nmsls || e.idsls || '(tanpa nama)')} <span class="text-amber-300">${escapeHtml(reason)}</span></li>`).join('');
+  } else {
+    DOM.sampelFailedBox.classList.add('hidden');
+  }
+
+  const kecs = [...new Set(s.matched.map((m) => m.features[0].properties.nmkec))].sort();
+  DOM.sampelKecFilter.innerHTML = '<option value="">Semua kecamatan</option>' +
+    kecs.map((k) => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join('');
+  renderSampelList();
+}
+
+function renderSampelList() {
+  const s = state.sampel;
+  if (!s) return;
+  const kec = DOM.sampelKecFilter.value;
+  const items = s.matched
+    .map((m, i) => ({ m, i }))
+    .filter(({ m }) => !kec || m.features[0].properties.nmkec === kec);
+  DOM.sampelList.innerHTML = items.map(({ m, i }) => {
+    const p = m.features[0].properties;
+    const meta = [m.entry.nks && `NKS ${m.entry.nks}`, m.entry.petugas].filter(Boolean).join(' · ');
+    return `<li><button type="button" data-sampel-index="${i}" class="w-full text-left mitra-card hover:border-fuchsia-500/60 transition">
+      <span class="block text-xs font-semibold text-slate-100">[${escapeHtml(p.kdsls)}] ${escapeHtml(p.nmsls)}</span>
+      <span class="block text-[11px] text-slate-400 mt-0.5">Desa ${escapeHtml(p.nmdesa)}, Kec ${escapeHtml(p.nmkec)}${meta ? ' · ' + escapeHtml(meta) : ''}</span>
+    </button></li>`;
+  }).join('');
+  DOM.sampelList.querySelectorAll('button[data-sampel-index]').forEach((btn) => {
+    btn.addEventListener('click', () => focusSampel(Number(btn.dataset.sampelIndex)));
+  });
+}
+
+function focusSampel(index) {
+  const m = state.sampel && state.sampel.matched[index];
+  if (!m) return;
+  closeModalEl(DOM.modalSampel);
+  state.map.fitBounds(L.geoJSON(m.features).getBounds(), { padding: [60, 60], animate: true, maxZoom: 17 });
+  selectFeature(m.features[0], null);
+}
+
+function clearSampel() {
+  if (state.sampelLayer) {
+    state.map.removeLayer(state.sampelLayer);
+    state.sampelLayer = null;
+  }
+  state.sampel = null;
+  state.sampelByKey = new Map();
+  DOM.sampelWidget.classList.add('hidden');
+  DOM.sampelInfo.classList.add('hidden');
+  showSampelView('upload');
+  closeModalEl(DOM.modalSampel);
+  showToast('Sorotan SLS sampel dihapus.', 'info');
+}
+
+function renderSampelInfo(feature) {
+  const m = state.sampelByKey && state.sampelByKey.get(SlsLib.canonicalId(feature.properties));
+  const sub = m && m.entry.kdsub !== '00' ? m.entry.kdsub : null;
+  const isSample = m && (!sub || String(feature.properties.kdsubsls).padStart(2, '0') === sub);
+  if (!isSample) {
+    DOM.sampelInfo.classList.add('hidden');
+    return;
+  }
+  const e = m.entry;
+  DOM.sampelInfoText.textContent = [
+    e.nks && `NKS ${e.nks}`,
+    `Petugas: ${e.petugas || '-'}`,
+    e.keluarga && `Perkiraan keluarga SE2026: ${e.keluarga}`
+  ].filter(Boolean).join(' · ');
+  DOM.sampelInfo.classList.remove('hidden');
+}
+
+function downloadSampelTemplate() {
+  const ws = XLSX.utils.json_to_sheet([
+    { 'Kode Kec': '030', 'Kode Desa': '003', 'Kode SLS': '0002', 'Nama SLS': 'RT 02 RK 02 DUSUN BUNGING' }
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Template_SLS_Sampel');
+  XLSX.writeFile(wb, 'Template_SLS_Sampel_Selayar.xlsx');
+}
+
+function downloadSampelFailed() {
+  const s = state.sampel;
+  if (!s || s.failed.length === 0) return;
+  const rows = s.failed.map(({ entry: e, reason }) => ({
+    Baris: e.rowNumber,
+    'ID SLS': e.idsls,
+    Kecamatan: e.nmkec,
+    Desa: e.nmdesa,
+    'Nama SLS': e.nmsls,
+    Alasan: reason
+  }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Baris_Gagal');
+  XLSX.writeFile(wb, 'SLS_Sampel_Gagal_Dicocokkan.xlsx');
+}
+
+/**
  * Main Application Bootstrap
  */
 function initApp() {
@@ -2039,6 +2658,8 @@ function initApp() {
   initFilterModal();
   initBasemapModal();
   initExcelModal();
+  initMitra();
+  initSampel();
   initModalBackdrops();
   initClipboardActions();
 

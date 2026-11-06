@@ -102,12 +102,37 @@
     </div>
   </header>
 
+  <!-- MODE BUTTONS: Cek Mitra & Upload SLS Sampel -->
+  <div class="absolute top-[58px] sm:top-[66px] left-0 right-0 z-30 px-2 sm:px-3 pointer-events-none">
+    <div class="max-w-2xl mx-auto flex items-center gap-2">
+      <button
+        id="btnToggleMitra"
+        type="button"
+        aria-pressed="false"
+        class="pointer-events-auto h-11 px-4 bg-teal-950/90 hover:bg-teal-900 text-teal-200 font-semibold text-sm rounded-2xl shadow-xl border border-teal-500/60 flex items-center gap-2 transition active:scale-95 flex-shrink-0"
+        title="Lihat mitra di setiap SLS pada peta OpenStreetMap"
+      >
+        <i data-lucide="users" class="w-4 h-4 text-teal-300"></i>
+        <span id="btnToggleMitraLabel">Cek Mitra</span>
+      </button>
+      <button
+        id="btnOpenSampelModal"
+        type="button"
+        class="pointer-events-auto h-11 px-4 bg-fuchsia-950/80 hover:bg-fuchsia-900 text-fuchsia-200 font-semibold text-sm rounded-2xl shadow-xl border border-fuchsia-500/60 flex items-center gap-2 transition active:scale-95 flex-shrink-0"
+        title="Upload daftar SLS sampel (Excel) untuk disorot di peta"
+      >
+        <i data-lucide="target" class="w-4 h-4 text-fuchsia-300"></i>
+        <span>Upload Sampel</span>
+      </button>
+    </div>
+  </div>
+
   <!-- MAP CONTAINER -->
   <main class="relative flex-1 w-full h-full">
     <div id="map"></div>
 
     <!-- FLOATING MAP CONTROLS (TOP RIGHT) -->
-    <div class="absolute top-[66px] sm:top-20 right-3 z-20 flex flex-col gap-2.5 items-end pointer-events-auto">
+    <div class="absolute top-[112px] sm:top-[124px] right-3 z-20 flex flex-col gap-2.5 items-end pointer-events-auto">
       <!-- Tombol Deteksi Lokasi Sekarang (GPS) -->
       <button 
         id="btnGps" 
@@ -127,8 +152,45 @@
       </button>
     </div>
 
+    <!-- STATUS STACK (kiri atas): banner Cek Mitra, widget sampel, widget titik Excel -->
+    <div id="statusStack" class="absolute top-[112px] left-3 right-[68px] sm:right-auto sm:w-[340px] z-20 flex flex-col gap-2 pointer-events-none">
+      <!-- Banner mode Cek Mitra -->
+      <div id="mitraBanner" role="status" aria-live="polite" class="hidden pointer-events-auto bg-slate-900/95 backdrop-blur-md rounded-2xl border border-teal-500/50 shadow-2xl p-3 text-xs text-slate-200">
+        <div class="flex items-start justify-between gap-2">
+          <p id="mitraBannerText" class="font-semibold text-slate-100 leading-snug">Mode Cek Mitra aktif. Ketuk wilayah di peta untuk melihat mitranya.</p>
+          <button id="btnExitMitra" type="button" class="flex-shrink-0 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-xs font-semibold">Keluar</button>
+        </div>
+        <div id="mitraLegend" class="hidden mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-300">
+          <span class="flex items-center gap-1.5"><span class="inline-block w-3.5 h-3.5 rounded-sm bg-teal-500/40 border-2 border-teal-300"></span>Desa ada mitra</span>
+          <span class="flex items-center gap-1.5"><span class="inline-block w-3.5 h-3.5 rounded-sm bg-slate-400/10 border border-slate-400"></span>Belum ada mitra</span>
+        </div>
+        <div id="mitraLoadRow" class="mt-2 flex flex-wrap items-center gap-2">
+          <button id="btnLoadMitra" type="button" class="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+            <i data-lucide="upload" class="w-3.5 h-3.5"></i><span id="btnLoadMitraLabel">Muat Data Mitra</span>
+          </button>
+          <span id="mitraDataMeta" class="text-[11px] text-slate-400"></span>
+          <input type="file" id="mitraFileInput" accept=".xlsx, .xls, .csv" class="hidden" />
+        </div>
+      </div>
+
+      <!-- Widget sampel -->
+      <div id="sampelWidget" class="hidden pointer-events-auto bg-slate-900/95 backdrop-blur-md rounded-2xl border border-fuchsia-500/50 shadow-2xl p-2.5 text-xs text-slate-200 flex flex-col gap-2 max-w-[260px]">
+        <div class="flex items-center gap-1.5 min-w-0">
+          <span class="inline-block w-3.5 h-3.5 rounded-sm bg-fuchsia-500/40 border-2 border-fuchsia-300 flex-shrink-0"></span>
+          <span id="sampelWidgetTitle" class="font-bold text-slate-100 truncate">0 SLS Sampel</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btnSampelList" type="button" class="flex-1 py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-medium flex items-center justify-center gap-1.5 transition">
+            <i data-lucide="list" class="w-3.5 h-3.5 text-fuchsia-300"></i><span>Daftar Sampel</span>
+          </button>
+          <button id="btnSampelClear" type="button" class="py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 text-xs font-medium flex items-center gap-1 transition" title="Hapus sorotan sampel">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i><span>Hapus</span>
+          </button>
+        </div>
+      </div>
+
     <!-- FLOATING EXCEL POINTS CONTROLS (Muncul jika titik Excel dimuat) -->
-    <div id="excelPointsWidget" class="hidden absolute top-[165px] sm:top-[176px] left-3 sm:left-4 z-20 flex flex-col gap-1.5 pointer-events-auto max-w-[240px]">
+    <div id="excelPointsWidget" class="hidden flex flex-col gap-1.5 pointer-events-auto max-w-[240px]">
       <div class="bg-slate-900/95 backdrop-blur-md rounded-2xl border border-emerald-500/40 shadow-2xl p-2.5 text-xs text-slate-200 flex flex-col gap-2">
         <div class="flex items-center justify-between gap-1.5">
           <div class="flex items-center gap-1.5 min-w-0">
@@ -153,6 +215,7 @@
           <span>Lihat Tabel & Ekspor</span>
         </button>
       </div>
+    </div>
     </div>
 
     <!-- FLOATING MAP CONTROLS (BOTTOM RIGHT) -->
@@ -216,8 +279,28 @@
           </div>
 
           <!-- Collapsible Body (Grid & Actions) -->
-          <div id="drawerBody" class="drawer-body transition-all duration-300 overflow-hidden">
+          <div id="drawerBody" class="drawer-body transition-all duration-300">
             <div class="border-t border-slate-800 my-1"></div>
+
+            <!-- Info SLS sampel (muncul jika SLS ini ada di daftar sampel) -->
+            <div id="sampelInfo" class="hidden my-2.5 p-2.5 rounded-xl bg-fuchsia-950/40 border border-fuchsia-500/40 text-xs">
+              <div class="font-bold text-fuchsia-200 flex items-center gap-1.5"><i data-lucide="target" class="w-3.5 h-3.5"></i>SLS Sampel</div>
+              <div id="sampelInfoText" class="text-slate-300 mt-1 leading-relaxed"></div>
+            </div>
+
+            <!-- Daftar mitra (muncul saat mode Cek Mitra aktif) -->
+            <div id="mitraSection" class="hidden my-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <h3 id="mitraSummary" class="text-sm font-bold text-slate-100">Mitra</h3>
+                <button id="btnCopyMitra" type="button" class="hidden px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] text-slate-200 flex items-center gap-1">
+                  <i data-lucide="copy" class="w-3 h-3"></i>Salin daftar
+                </button>
+              </div>
+              <p id="mitraSubSummary" class="text-[11px] text-slate-400 mt-0.5"></p>
+              <input id="mitraSearch" type="search" placeholder="Cari nama mitra..." class="hidden mt-2 w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-500 text-xs focus:ring-2 focus:ring-teal-500/50 focus:outline-none" />
+              <div id="mitraList" class="mt-2 space-y-1.5"></div>
+            </div>
+
 
             <!-- Grid Details -->
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 py-2.5 text-xs sm:text-sm">
@@ -506,6 +589,71 @@
     </div>
   </div>
 
+  <!-- MODAL: UPLOAD DAFTAR SLS SAMPEL -->
+  <div id="modalSampel" class="modal-overlay hidden-modal fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm">
+    <div class="bg-slate-900 rounded-3xl shadow-2xl border border-slate-700/80 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden text-slate-100">
+      <div class="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 flex-shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/30 flex items-center justify-center text-fuchsia-300 flex-shrink-0">
+            <i data-lucide="target" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-100 text-base leading-tight">Upload Daftar SLS Sampel</h3>
+            <p class="text-xs text-slate-400 mt-0.5">SLS sampel di file Excel langsung disorot di peta</p>
+          </div>
+        </div>
+        <button id="btnCloseSampelModal" type="button" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-800 transition" aria-label="Tutup">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
+        <div id="sampelUploadSection" class="space-y-3">
+          <ol class="text-xs text-slate-300 space-y-1.5">
+            <li class="flex items-start gap-2"><span class="w-5 h-5 rounded-full bg-fuchsia-500/20 text-fuchsia-200 flex items-center justify-center font-bold flex-shrink-0">1</span><span>Siapkan file daftar sampel (Excel DSLS), atau <button id="btnDownloadSampelTemplate" type="button" class="text-fuchsia-300 underline underline-offset-2 font-medium">unduh template</button>.</span></li>
+            <li class="flex items-start gap-2"><span class="w-5 h-5 rounded-full bg-fuchsia-500/20 text-fuchsia-200 flex items-center justify-center font-bold flex-shrink-0">2</span><span>Pilih atau tarik file ke kotak di bawah.</span></li>
+            <li class="flex items-start gap-2"><span class="w-5 h-5 rounded-full bg-fuchsia-500/20 text-fuchsia-200 flex items-center justify-center font-bold flex-shrink-0">3</span><span>Lihat SLS sampel tersorot di peta.</span></li>
+          </ol>
+          <div id="sampelDropzone" tabindex="0" role="button" aria-label="Pilih file daftar SLS sampel" class="border-2 border-dashed border-slate-700 hover:border-fuchsia-500/70 focus:border-fuchsia-500/70 focus:outline-none rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer bg-slate-800/40 hover:bg-slate-800/70 transition group">
+            <input type="file" id="sampelFileInput" accept=".xlsx, .xls, .csv" class="hidden" />
+            <div class="w-12 h-12 rounded-2xl bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center text-fuchsia-300 mb-2.5">
+              <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+            </div>
+            <span class="text-sm font-semibold text-slate-200">Pilih atau tarik file Excel / CSV ke sini</span>
+            <span class="text-xs text-slate-400 mt-1">File dibaca di perangkat Anda dan tidak dikirim ke server.</span>
+          </div>
+          <p id="sampelError" role="alert" class="hidden text-xs text-rose-300 bg-rose-950/40 border border-rose-500/40 rounded-xl p-2.5"></p>
+        </div>
+
+        <div id="sampelResultSection" class="hidden space-y-3">
+          <div id="sampelSummary" role="status" aria-live="polite" class="p-3 rounded-2xl bg-fuchsia-950/40 border border-fuchsia-500/40 text-sm font-semibold text-slate-100"></div>
+          <div id="sampelFailedBox" class="hidden rounded-2xl border border-amber-500/40 bg-amber-950/30 p-3 text-xs">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-semibold text-amber-200" id="sampelFailedTitle"></span>
+              <button id="btnDownloadSampelFailed" type="button" class="text-amber-300 underline underline-offset-2 font-medium">Unduh daftar</button>
+            </div>
+            <ul id="sampelFailedList" class="mt-2 space-y-1 text-slate-300 max-h-32 overflow-y-auto"></ul>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <h4 class="text-sm font-bold text-slate-100">Daftar SLS sampel</h4>
+            <select id="sampelKecFilter" aria-label="Saring per kecamatan" class="px-2.5 py-1.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50">
+              <option value="">Semua kecamatan</option>
+            </select>
+          </div>
+          <ul id="sampelList" class="space-y-1.5 max-h-60 overflow-y-auto pr-0.5"></ul>
+        </div>
+      </div>
+
+      <div id="sampelFooter" class="hidden p-4 sm:p-5 border-t border-slate-800 flex items-center gap-2 flex-shrink-0">
+        <button id="btnSampelViewMap" type="button" class="flex-1 h-11 bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-semibold text-sm rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2">
+          <i data-lucide="map" class="w-4 h-4"></i><span>Lihat di Peta</span>
+        </button>
+        <button id="btnSampelReplace" type="button" class="h-11 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium text-sm rounded-xl transition">Ganti file</button>
+        <button id="btnSampelClear2" type="button" class="h-11 px-4 bg-slate-800 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 border border-slate-700 font-medium text-sm rounded-xl transition">Hapus</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: UPLOAD EXCEL / CSV KOORDINAT -->
   <div id="modalExcel" class="modal-overlay hidden-modal fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm">
     <div class="bg-slate-900 rounded-3xl shadow-2xl border border-slate-700/80 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 text-slate-100">
@@ -723,6 +871,7 @@
   </div>
 
   <!-- Main JavaScript Logic -->
+  <script src="lib/slslib.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

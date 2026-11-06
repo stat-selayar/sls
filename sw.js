@@ -1,10 +1,11 @@
 // Service Worker for SLS Finder Kepulauan Selayar
-const CACHE_NAME = 'sls-selayar-v9';
+const CACHE_NAME = 'sls-selayar-v10';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './style.css',
   './app.js',
+  './lib/slslib.js',
   './manifest.json',
   './Final_SLS_202517301.geojson'
 ];
