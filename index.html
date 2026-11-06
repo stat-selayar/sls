@@ -16,9 +16,7 @@
     (function () {
       var saved = null;
       try { saved = localStorage.getItem('sls-theme'); } catch (e) {}
-      var dark = !(window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches);
-      var theme = saved === 'light' || saved === 'dark' ? saved : dark ? 'dark' : 'light';
-      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.setAttribute('data-theme', saved === 'dark' ? 'dark' : 'light');
     })();
   </script>
 

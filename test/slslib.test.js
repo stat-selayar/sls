@@ -161,13 +161,12 @@ test('mitraForSls ignores partners from other desa', () => {
 
 /* ------------------------------ theme & panel ------------------------------ */
 
-test('resolveTheme prefers a saved choice, else the system, else dark', () => {
-  assert.equal(Lib.resolveTheme('light', true), 'light');
-  assert.equal(Lib.resolveTheme('dark', false), 'dark');
-  assert.equal(Lib.resolveTheme(null, false), 'light');
-  assert.equal(Lib.resolveTheme(null, true), 'dark');
-  assert.equal(Lib.resolveTheme('bogus', false), 'light');
-  assert.equal(Lib.resolveTheme(undefined, undefined), 'dark');
+test('resolveTheme uses the saved choice and defaults to light', () => {
+  assert.equal(Lib.resolveTheme('light'), 'light');
+  assert.equal(Lib.resolveTheme('dark'), 'dark');
+  assert.equal(Lib.resolveTheme(null), 'light');
+  assert.equal(Lib.resolveTheme(undefined), 'light');
+  assert.equal(Lib.resolveTheme('bogus'), 'light');
 });
 
 test('clampPanelSize keeps the panel inside its bounds and tolerates bad input', () => {

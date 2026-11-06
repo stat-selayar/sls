@@ -2692,20 +2692,12 @@ function applyTheme(theme, persist = false) {
 }
 
 function initTheme() {
-  const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  const current = SlsLib.resolveTheme(document.documentElement.getAttribute('data-theme'));
   applyTheme(current);
   DOM.btnTheme.addEventListener('click', () => {
     const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
     applyTheme(next, true);
   });
-  // Follow the system only while the user has not picked a theme by hand
-  if (window.matchMedia) {
-    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      let saved = null;
-      try { saved = localStorage.getItem(THEME_KEY); } catch (err) { /* ignore */ }
-      if (!saved) applyTheme(SlsLib.resolveTheme(null, e.matches));
-    });
-  }
 }
 
 /* ------------------------- resizable right panel ------------------------- */
