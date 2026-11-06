@@ -188,26 +188,21 @@
                   GPS ±5m
                 </span>
               </div>
-              <h2 id="slsName" class="text-base sm:text-lg font-bold text-slate-100 leading-snug truncate">
+              <h2 id="slsName" class="text-base sm:text-lg font-bold text-slate-100 leading-snug line-clamp-2 break-words">
                 Memuat Informasi...
               </h2>
-              <p id="slsDesaKec" class="text-xs sm:text-sm text-slate-400 font-medium mt-0.5 truncate">
+              <p id="slsDesaKec" class="text-xs sm:text-sm text-slate-400 font-medium mt-0.5 line-clamp-2 break-words">
                 Desa - Kecamatan
               </p>
             </div>
             <div class="flex items-center gap-1 flex-shrink-0">
-              <button 
-                id="btnToggleDrawer" 
-                class="text-slate-400 hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-800 transition active:scale-95" 
-                title="Sembunyikan / Tampilkan Detail"
-              >
+              <button id="btnMaximizeDrawer" type="button" class="sheet-max-btn w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800 transition active:scale-95" aria-label="Perbesar panel" title="Perbesar panel">
+                <i data-lucide="maximize-2" id="drawerMaxIcon" class="w-5 h-5"></i>
+              </button>
+              <button id="btnToggleDrawer" type="button" class="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-200 rounded-xl hover:bg-slate-800 transition active:scale-95" aria-label="Sembunyikan atau tampilkan detail" title="Sembunyikan / tampilkan detail">
                 <i data-lucide="chevron-down" id="drawerToggleIcon" class="w-5 h-5 transition-transform duration-200"></i>
               </button>
-              <button 
-                id="btnCloseDrawer" 
-                class="text-slate-400 hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-800 transition active:scale-95" 
-                title="Tutup Info"
-              >
+              <button id="btnCloseDrawer" type="button" class="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-200 rounded-xl hover:bg-slate-800 transition active:scale-95" aria-label="Tutup info" title="Tutup info">
                 <i data-lucide="x" class="w-5 h-5"></i>
               </button>
             </div>

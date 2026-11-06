@@ -67,6 +67,7 @@ const DOM = {
   drawerHandle: document.getElementById('drawerHandle'),
   drawerHeader: document.getElementById('drawerHeader'),
   btnToggleDrawer: document.getElementById('btnToggleDrawer'),
+  btnMaximizeDrawer: document.getElementById('btnMaximizeDrawer'),
   drawerToggleIcon: document.getElementById('drawerToggleIcon'),
   drawerBody: document.getElementById('drawerBody'),
   btnReopenDrawer: document.getElementById('btnReopenDrawer'),
@@ -144,7 +145,6 @@ const DOM = {
   mitraLegend: document.getElementById('mitraLegend'),
   btnLoadMitra: document.getElementById('btnLoadMitra'),
   btnToggleMitraBanner: document.getElementById('btnToggleMitraBanner'),
-  mitraBannerIcon: document.getElementById('mitraBannerIcon'),
   btnMinimizeSampel: document.getElementById('btnMinimizeSampel'),
   btnZoomIn: document.getElementById('btnZoomIn'),
   btnZoomOut: document.getElementById('btnZoomOut'),
@@ -691,6 +691,26 @@ function syncSheetHeight() {
   document.documentElement.style.setProperty('--sheet-h', `${Math.round(h)}px`);
 }
 
+/** lucide.createIcons() swaps <i> for <svg>, so a kept reference goes stale: rebuild the tag by id. */
+function setLucideIcon(id, name) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const i = document.createElement('i');
+  i.id = id;
+  i.className = el.getAttribute('class') || '';
+  i.setAttribute('data-lucide', name);
+  el.replaceWith(i);
+  lucide.createIcons();
+}
+
+function setDrawerMaximized(on) {
+  DOM.bottomSheet.classList.toggle('is-maximized', on);
+  document.body.classList.toggle('sheet-max', on);
+  DOM.btnMaximizeDrawer.setAttribute('aria-label', on ? 'Kecilkan panel' : 'Perbesar panel');
+  DOM.btnMaximizeDrawer.title = on ? 'Kecilkan panel' : 'Perbesar panel';
+  setLucideIcon('drawerMaxIcon', on ? 'minimize-2' : 'maximize-2');
+}
+
 function openDrawer(minimized = false) {
   document.body.classList.add('drawer-open');
   hideReopenPill();
@@ -704,6 +724,7 @@ function openDrawer(minimized = false) {
 }
 
 function closeDrawer(clearPill = false) {
+  setDrawerMaximized(false);
   document.body.classList.remove('drawer-open');
   DOM.bottomSheet.classList.remove('show-drawer');
   DOM.bottomSheet.classList.add('hidden-drawer');
@@ -715,23 +736,18 @@ function closeDrawer(clearPill = false) {
 }
 
 function minimizeDrawer() {
+  setDrawerMaximized(false);
   document.body.classList.remove('drawer-open');
   state.isDrawerMinimized = true;
   DOM.bottomSheet.classList.add('is-minimized');
-  if (DOM.drawerToggleIcon) {
-    DOM.drawerToggleIcon.setAttribute('data-lucide', 'chevron-up');
-    lucide.createIcons();
-  }
+  setLucideIcon('drawerToggleIcon', 'chevron-up');
 }
 
 function expandDrawer() {
   document.body.classList.add('drawer-open');
   state.isDrawerMinimized = false;
   DOM.bottomSheet.classList.remove('is-minimized');
-  if (DOM.drawerToggleIcon) {
-    DOM.drawerToggleIcon.setAttribute('data-lucide', 'chevron-down');
-    lucide.createIcons();
-  }
+  setLucideIcon('drawerToggleIcon', 'chevron-down');
 }
 
 function toggleDrawerMinimize() {
@@ -1381,6 +1397,11 @@ function initClipboardActions() {
   // Drawer Interactive Controls (Minimalist Hide/Show & Reopen)
   DOM.btnCloseDrawer.addEventListener('click', () => closeDrawer(false));
   
+  DOM.btnMaximizeDrawer.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (state.isDrawerMinimized) expandDrawer();
+    setDrawerMaximized(!DOM.bottomSheet.classList.contains('is-maximized'));
+  });
   if (DOM.btnToggleDrawer) {
     DOM.btnToggleDrawer.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -2270,8 +2291,7 @@ function updateMitraUi() {
   DOM.btnToggleMitraBanner.setAttribute('aria-expanded', String(!collapsed));
   DOM.btnToggleMitraBanner.setAttribute('aria-label', collapsed ? 'Perbesar panel Cek Mitra' : 'Perkecil panel Cek Mitra');
   DOM.btnToggleMitraBanner.title = collapsed ? 'Perbesar' : 'Perkecil';
-  DOM.mitraBannerIcon.setAttribute('data-lucide', collapsed ? 'chevron-down' : 'chevron-up');
-  lucide.createIcons();
+  setLucideIcon('mitraBannerIcon', collapsed ? 'chevron-down' : 'chevron-up');
   if (collapsed) {
     DOM.mitraBannerText.textContent = loaded ? `Cek Mitra aktif · ${state.mitraList.length} mitra` : 'Cek Mitra aktif · data belum dimuat';
   } else {

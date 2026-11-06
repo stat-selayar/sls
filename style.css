@@ -476,7 +476,8 @@ header {
 /* ---------- Wide layout (tablet portrait and up): one left column ---------- */
 @media (min-width: 768px) and (min-height: 501px) {
   #panelRoot {
-    right: auto;
+    left: auto;
+    right: 0;
     width: 392px;
     padding: 12px;
     display: flex;
@@ -534,8 +535,16 @@ header {
     min-height: 0;
   }
   .bottom-sheet.is-minimized .drawer-body { max-height: 0 !important; flex: 0 0 auto; }
-  #mapControls { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
-  #btnReopenDrawer { left: calc(50% + 196px); }
+  /* panel on the right, so the map buttons move to the left edge */
+  #mapControls {
+    right: auto;
+    left: 16px;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    align-items: flex-start;
+  }
+  #btnReopenDrawer { left: calc(50% - 196px); }
+  #bottomSheet .sheet-max-btn { display: none; }
+  .bottom-sheet.is-maximized .drawer-body { max-height: none; }
 }
 
 /* Landscape phones: the sheet is centred and the buttons sit beside it, so do not stack them above it */
@@ -543,3 +552,15 @@ header {
   #mapControls { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
   .zoom-btns { display: none; }
 }
+
+/* Phone: maximize the detail sheet to nearly full height (search bar stays visible) */
+.bottom-sheet.is-maximized .drawer-body {
+  max-height: max(calc(100vh - 14rem), 7rem);
+  max-height: max(calc(100dvh - 14rem), 7rem);
+}
+@media (max-width: 767px), (max-height: 500px) {
+  body.sheet-max #mapControls { display: none; }
+}
+
+/* A maximized sheet sits over the toolbar: make it opaque so nothing bleeds through */
+.bottom-sheet.is-maximized .sheet-card { background: rgb(15, 23, 42); }

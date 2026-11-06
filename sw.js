@@ -1,5 +1,5 @@
 // Service Worker for SLS Finder Kepulauan Selayar
-const CACHE_NAME = 'sls-selayar-v12';
+const CACHE_NAME = 'sls-selayar-v13';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
