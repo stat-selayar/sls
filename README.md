@@ -45,6 +45,11 @@ WebGIS modern, cepat, dan ringan berbasis static HTML/JS untuk mendeteksi posisi
    - Format DSLS asli dibaca apa adanya: judul di atas tabel, kode SLS tanpa nol di depan, baris total, dan header kedua diabaikan. Workbook dengan beberapa tab dipilih otomatis. Template minimal tersedia di dalam aplikasi.
    - Pencocokan memakai kode kecamatan + desa + SLS, bukan properti `idsls` di GeoJSON (3 fitur memiliki `idsls` yang tidak konsisten dengan kode SLS-nya).
 
+12. **Tema Gelap / Terang**:
+    - Tombol bulan/matahari di bilah atas. Pilihan tersimpan di perangkat; bila belum memilih, tema mengikuti pengaturan sistem.
+13. **Panel Kanan Bisa Diubah Ukurannya**:
+    - Tarik tepi kiri panel (laptop) atau bilah di atasnya (HP). Keyboard: panah, `Home`, `End`; klik dua kali untuk mengembalikan ukuran awal. Ukuran tersimpan.
+
 ---
 
 ## 📂 Struktur Proyek

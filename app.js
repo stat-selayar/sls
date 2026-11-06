@@ -146,6 +146,8 @@ const DOM = {
   btnToggleMitraLabel: document.getElementById('btnToggleMitraLabel'),
   mitraBanner: document.getElementById('mitraBanner'),
   mitraBannerText: document.getElementById('mitraBannerText'),
+  btnTheme: document.getElementById('btnTheme'),
+  panelResizer: document.getElementById('panelResizer'),
   mitraLegend: document.getElementById('mitraLegend'),
   btnLoadMitra: document.getElementById('btnLoadMitra'),
   btnToggleMitraBanner: document.getElementById('btnToggleMitraBanner'),
@@ -1249,8 +1251,8 @@ function initFilterModal() {
 
   DOM.filterKecamatan.addEventListener('change', () => {
     const selKec = DOM.filterKecamatan.value;
-    DOM.filterDesa.innerHTML = '<option value="">-- Semua Desa di Kecamatan ini --</option>';
-    DOM.filterSls.innerHTML = '<option value="">-- Pilih Desa Terlebih Dahulu --</option>';
+    DOM.filterDesa.innerHTML = '<option value="">Semua desa di kecamatan ini</option>';
+    DOM.filterSls.innerHTML = '<option value="">Pilih desa dulu</option>';
     DOM.filterSls.disabled = true;
 
     if (!selKec) {
@@ -1274,7 +1276,7 @@ function initFilterModal() {
   DOM.filterDesa.addEventListener('change', () => {
     const selKec = DOM.filterKecamatan.value;
     const selDesa = DOM.filterDesa.value;
-    DOM.filterSls.innerHTML = '<option value="">-- Semua SLS di Desa ini --</option>';
+    DOM.filterSls.innerHTML = '<option value="">Semua SLS di desa ini</option>';
 
     if (!selDesa) {
       DOM.filterSls.disabled = true;
@@ -1332,7 +1334,7 @@ function initFilterModal() {
 }
 
 function populateFilterDropdowns() {
-  DOM.filterKecamatan.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
+  DOM.filterKecamatan.innerHTML = '<option value="">Semua kecamatan</option>';
   state.kecamatanList.forEach(k => {
     const opt = document.createElement('option');
     opt.value = k.name;
@@ -2669,6 +2671,162 @@ function downloadSampelFailed() {
   XLSX.writeFile(wb, 'SLS_Sampel_Gagal_Dicocokkan.xlsx');
 }
 
+
+/* ------------------------------ theme ------------------------------ */
+
+const THEME_KEY = 'sls-theme';
+const THEME_COLOR = { dark: '#0f172a', light: '#f8fafc' };
+
+function applyTheme(theme, persist = false) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', THEME_COLOR[theme]);
+  const toLight = theme === 'dark';
+  const label = toLight ? 'Ganti ke tema terang' : 'Ganti ke tema gelap';
+  DOM.btnTheme.setAttribute('aria-label', label);
+  DOM.btnTheme.title = label;
+  setLucideIcon('themeIcon', toLight ? 'sun' : 'moon');
+  if (persist) {
+    try { localStorage.setItem(THEME_KEY, theme); } catch (e) { /* private mode */ }
+  }
+}
+
+function initTheme() {
+  const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  applyTheme(current);
+  DOM.btnTheme.addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    applyTheme(next, true);
+  });
+  // Follow the system only while the user has not picked a theme by hand
+  if (window.matchMedia) {
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      let saved = null;
+      try { saved = localStorage.getItem(THEME_KEY); } catch (err) { /* ignore */ }
+      if (!saved) applyTheme(SlsLib.resolveTheme(null, e.matches));
+    });
+  }
+}
+
+/* ------------------------- resizable right panel ------------------------- */
+
+const PANEL_DOCKED_QUERY = '(min-width: 768px), (orientation: landscape) and (max-height: 500px)';
+const PANEL_LIMITS = {
+  w: { key: 'sls-panel-w', min: 300, max: 720, def: 380, prop: '--panel-w' },
+  h: { key: 'sls-panel-h', min: 140, max: 9999, def: 0, prop: '--panel-h' }
+};
+
+function panelAxis() {
+  return window.matchMedia(PANEL_DOCKED_QUERY).matches ? 'w' : 'h';
+}
+
+/** Largest size the panel may take: at most 60% of the shell width, or 75% of its height on phones. */
+function panelMax(axis) {
+  const shell = document.getElementById('shell').getBoundingClientRect();
+  const lim = PANEL_LIMITS[axis];
+  return axis === 'w' ? Math.min(lim.max, shell.width * 0.6) : shell.height * 0.75;
+}
+
+function setPanelSize(axis, px, persist = false) {
+  const lim = PANEL_LIMITS[axis];
+  const size = SlsLib.clampPanelSize(px, lim.min, panelMax(axis), lim.def || lim.min);
+  document.documentElement.style.setProperty(lim.prop, size + 'px');
+  if (axis === 'h') setDrawerMaximized(false);
+  DOM.panelResizer.setAttribute('aria-valuenow', String(size));
+  DOM.panelResizer.setAttribute('aria-valuemin', String(lim.min));
+  DOM.panelResizer.setAttribute('aria-valuemax', String(Math.round(panelMax(axis))));
+  if (persist) {
+    try { localStorage.setItem(lim.key, String(size)); } catch (e) { /* ignore */ }
+  }
+  return size;
+}
+
+function resetPanelSize(axis) {
+  const lim = PANEL_LIMITS[axis];
+  document.documentElement.style.removeProperty(lim.prop);
+  try { localStorage.removeItem(lim.key); } catch (e) { /* ignore */ }
+  DOM.panelResizer.removeAttribute('aria-valuenow');
+}
+
+function currentPanelSize(axis) {
+  const r = DOM.sidePanel.getBoundingClientRect();
+  return axis === 'w' ? r.width : r.height;
+}
+
+function initPanelResizer() {
+  const handle = DOM.panelResizer;
+
+  const syncOrientation = () => {
+    const axis = panelAxis();
+    handle.setAttribute('aria-orientation', axis === 'w' ? 'vertical' : 'horizontal');
+    handle.setAttribute('aria-label', axis === 'w' ? 'Ubah lebar panel' : 'Ubah tinggi panel');
+    // Sizes saved for the other layout are ignored; keep the stored one in range for this one
+    let saved = null;
+    try { saved = localStorage.getItem(PANEL_LIMITS[axis].key); } catch (e) { /* ignore */ }
+    if (saved != null) setPanelSize(axis, Number(saved));
+  };
+  syncOrientation();
+  window.matchMedia(PANEL_DOCKED_QUERY).addEventListener('change', () => {
+    // Each layout has its own variable; drop the one that no longer applies
+    ['w', 'h'].forEach((a) => document.documentElement.style.removeProperty(PANEL_LIMITS[a].prop));
+    syncOrientation();
+  });
+  window.addEventListener('resize', () => {
+    const axis = panelAxis();
+    const lim = PANEL_LIMITS[axis];
+    if (document.documentElement.style.getPropertyValue(lim.prop)) setPanelSize(axis, currentPanelSize(axis));
+  });
+
+  let drag = null;
+  let frame = 0;
+  handle.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    const axis = panelAxis();
+    drag = { axis, moved: false, rect: document.getElementById('shell').getBoundingClientRect() };
+    handle.setPointerCapture(e.pointerId);
+    document.body.classList.add('is-resizing');
+    e.preventDefault();
+  });
+  handle.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    drag.moved = true;
+    const next = drag.axis === 'w' ? drag.rect.right - e.clientX : drag.rect.bottom - e.clientY;
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => drag && setPanelSize(drag.axis, next));
+  });
+  const end = (e) => {
+    if (!drag) return;
+    cancelAnimationFrame(frame);
+    const { axis, moved } = drag;
+    drag = null;
+    document.body.classList.remove('is-resizing');
+    if (handle.hasPointerCapture(e.pointerId)) handle.releasePointerCapture(e.pointerId);
+    // A plain click must not freeze the default size
+    if (moved) setPanelSize(axis, currentPanelSize(axis), true);
+  };
+  handle.addEventListener('pointerup', end);
+  handle.addEventListener('pointercancel', end);
+
+  handle.addEventListener('dblclick', () => resetPanelSize(panelAxis()));
+
+  handle.addEventListener('keydown', (e) => {
+    const axis = panelAxis();
+    // Dragging the edge left/up grows the panel, so the arrows follow that direction
+    const grow = axis === 'w' ? 'ArrowLeft' : 'ArrowUp';
+    const shrink = axis === 'w' ? 'ArrowRight' : 'ArrowDown';
+    const step = e.shiftKey ? 96 : 24;
+    let next = null;
+    if (e.key === grow) next = currentPanelSize(axis) + step;
+    else if (e.key === shrink) next = currentPanelSize(axis) - step;
+    else if (e.key === 'Home') next = PANEL_LIMITS[axis].min;
+    else if (e.key === 'End') next = panelMax(axis);
+    else if (e.key === 'Enter') { resetPanelSize(axis); e.preventDefault(); return; }
+    if (next == null) return;
+    e.preventDefault();
+    setPanelSize(axis, next, true);
+  });
+}
+
 /**
  * Main Application Bootstrap
  */
@@ -2684,6 +2842,8 @@ function initApp() {
   initSampel();
   initModalBackdrops();
   initClipboardActions();
+  initTheme();
+  initPanelResizer();
 
   // Controls event listeners
   DOM.btnGps.addEventListener('click', handleGeolocation);
