@@ -43,20 +43,6 @@ body, html {
   z-index: 20 !important;
 }
 
-/* Zoom controls sit bottom-left so the top-left stays free for the mode buttons and status cards */
-.leaflet-top.leaflet-left {
-  top: auto !important;
-  bottom: 24px !important;
-  left: 12px !important;
-}
-
-@media (min-width: 640px) {
-  .leaflet-top.leaflet-left {
-    left: 16px !important;
-    bottom: 24px !important;
-  }
-}
-
 /* Custom map pulse marker for GPS */
 .gps-pulse-icon {
   position: relative;
@@ -91,82 +77,6 @@ body, html {
     transform: scale(2.2);
     opacity: 0;
   }
-}
-
-/* Bottom Sheet Drawer Animation */
-.bottom-sheet {
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
-  will-change: transform, opacity;
-}
-
-.bottom-sheet.hidden-drawer {
-  transform: translateY(120%);
-  pointer-events: none;
-  opacity: 0;
-}
-
-.bottom-sheet.show-drawer {
-  transform: translateY(0%);
-  pointer-events: auto;
-  opacity: 1;
-}
-
-/* Collapsible Drawer Body (Cool Minimalist Hide/Show) */
-.drawer-body {
-  transition: max-height 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  max-height: min(max(calc(58vh - 7.5rem), 7rem), 460px);
-  max-height: min(max(calc(58dvh - 7.5rem), 7rem), 460px);
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  opacity: 1;
-  transform: scaleY(1);
-  transform-origin: top;
-}
-
-.bottom-sheet.is-minimized .drawer-body {
-  max-height: 0 !important;
-  opacity: 0 !important;
-  transform: scaleY(0);
-  pointer-events: none;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-}
-
-.bottom-sheet.is-minimized #drawerHandle div {
-  background-color: #38bdf8;
-  width: 32px;
-}
-
-.bottom-sheet.is-minimized #drawerHeader {
-  padding-bottom: 0;
-}
-
-/* Floating Reopen Pill Styling */
-#btnReopenDrawer {
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
-  background-color: rgba(15, 23, 42, 0.95) !important;
-  color: #f8fafc !important;
-  border-color: rgba(56, 189, 248, 0.4) !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(56, 189, 248, 0.2) !important;
-}
-
-#btnReopenDrawer span.text-slate-800 {
-  color: #f8fafc !important;
-}
-
-#btnReopenDrawer .border-l {
-  border-color: rgba(51, 65, 85, 0.8) !important;
-}
-
-#btnToggleDrawer {
-  color: #94a3b8 !important;
-}
-#btnToggleDrawer:hover {
-  background-color: #334155 !important;
-  color: #ffffff !important;
 }
 
 /* Smooth modal transitions */
@@ -329,11 +239,6 @@ header {
   padding-right: max(env(safe-area-inset-right), 0.5rem);
 }
 
-.bottom-sheet {
-  padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
-  padding-left: max(env(safe-area-inset-left), 0.75rem);
-  padding-right: max(env(safe-area-inset-right), 0.75rem);
-}
 
 /* Excel Feature Tab Buttons */
 .excel-tab-btn {
@@ -424,19 +329,7 @@ header {
   }
 }
 
-/* On small screens the detail sheet needs the room: hide the status cards while it is open */
-@media (max-width: 639px), (max-height: 500px) {
-  body.drawer-open #statusStack { display: none; }
-}
-
-/* ---------- Layout root: phones keep the header on top and a bottom sheet ---------- */
-#panelRoot {
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-}
-
-/* Map buttons: one neutral style, one column, bottom-right */
+/* Map buttons: one neutral style, one column */
 .map-btn {
   width: 44px;
   height: 44px;
@@ -453,114 +346,55 @@ header {
 .map-btn:active { transform: scale(0.94); }
 .map-btn:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
 
-/* On phones the column rides just above the detail sheet (--sheet-h is set from JS) */
-#mapControls {
-  bottom: calc(var(--sheet-h, 0px) + 16px + env(safe-area-inset-bottom, 0px));
-  transition: bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
 /* Touch screens pinch to zoom; keep +/- for mouse users only */
 @media (pointer: coarse) {
   .zoom-btns { display: none; }
 }
 
-/* Phones: while the detail sheet is open keep only GPS and basemap so the column always fits above it */
-@media (max-width: 767px) {
-  body.drawer-open #btnHome,
-  body.drawer-open .zoom-btns { display: none; }
-}
-
 /* Collapsed Cek Mitra card */
 #mitraBanner.is-collapsed #mitraBannerDetails { display: none; }
 
-/* ---------- Wide layout (tablet portrait and up): one left column ---------- */
-@media (min-width: 768px) and (min-height: 501px) {
-  #panelRoot {
-    left: auto;
-    right: 0;
-    width: 392px;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+/* ---------- App shell: top bar, map (flex-1) and a right panel ---------- */
+#map { position: absolute; inset: 0; height: auto; width: auto; }
+#shell { flex-direction: column; }
+
+.bottom-sheet.hidden-drawer { display: none; }
+
+/* Phones: the panel sits below the map */
+.side-panel {
+  height: 42vh;
+  height: 42dvh;
+  overflow: hidden;
+  border-top-width: 1px;
+  transition: height 0.25s ease, width 0.25s ease;
+}
+.side-panel.is-maximized { height: 68vh; height: 68dvh; }
+.side-panel.is-collapsed { height: 48px; }
+.side-panel.is-collapsed #panelScroll { display: none; }
+.panel-chevron { transform: rotate(90deg); transition: transform 0.2s ease; }
+.side-panel.is-collapsed .panel-chevron { transform: rotate(-90deg); }
+
+/* Wide screens and landscape phones: the panel docks on the right */
+@media (min-width: 768px), (orientation: landscape) and (max-height: 500px) {
+  #shell { flex-direction: row; }
+  .side-panel {
+    height: auto;
+    width: 380px;
+    border-top-width: 0;
+    border-left-width: 1px;
   }
-  #panelRoot > header,
-  #panelRoot > #statusStack,
-  #panelRoot > #bottomSheet {
-    position: static;
-    inset: auto;
-    padding: 0;
-    margin: 0;
-    max-width: none;
-    width: 100%;
-    transform: none;
-    flex: none;
-  }
-  #panelRoot > header > div,
-  #panelRoot > #statusStack > div {
-    max-width: none;
-    margin: 0;
-    padding-right: 0;
-  }
-  .chip-row {
-    flex-wrap: wrap;
-    overflow: visible;
-    margin: 0;
-    padding: 0;
-    -webkit-mask-image: none;
-    mask-image: none;
-  }
-  #panelRoot > #bottomSheet {
-    flex: 0 1 auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-  }
-  #bottomSheet.hidden-drawer { display: none; }
-  .sheet-card {
-    min-height: 0;
-    max-height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-  .sheet-inner {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    flex: 1 1 auto;
-  }
-  .drawer-body {
-    max-height: none;
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-  .bottom-sheet.is-minimized .drawer-body { max-height: 0 !important; flex: 0 0 auto; }
-  /* panel on the right, so the map buttons move to the left edge */
-  #mapControls {
-    right: auto;
-    left: 16px;
-    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-    align-items: flex-start;
-  }
-  #btnReopenDrawer { left: calc(50% - 196px); }
-  #bottomSheet .sheet-max-btn { display: none; }
-  .bottom-sheet.is-maximized .drawer-body { max-height: none; }
+  .side-panel.is-maximized { height: auto; }
+  .side-panel.is-collapsed { height: auto; width: 0; border-left-width: 0; }
+  .side-panel.is-collapsed > * { visibility: hidden; }
+  .panel-chevron,
+  .side-panel.is-collapsed .panel-chevron { transform: none; }
+  #sidePanel #btnMaximizeDrawer { display: none; }
+  body.panel-collapsed #btnPanelHandle { display: flex; }
+  #mapControls { right: auto; left: 12px; align-items: flex-start; }
 }
 
-/* Landscape phones: the sheet is centred and the buttons sit beside it, so do not stack them above it */
+/* Short landscape screens: keep the top bar to one row */
 @media (max-height: 500px) {
-  #mapControls { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
-  .zoom-btns { display: none; }
+  #brand { display: none; }
+  #topBar nav { order: 0; width: auto; }
 }
-
-/* Phone: maximize the detail sheet to nearly full height (search bar stays visible) */
-.bottom-sheet.is-maximized .drawer-body {
-  max-height: max(calc(100vh - 14rem), 7rem);
-  max-height: max(calc(100dvh - 14rem), 7rem);
-}
-@media (max-width: 767px), (max-height: 500px) {
-  body.sheet-max #mapControls { display: none; }
-}
-
-/* A maximized sheet sits over the toolbar: make it opaque so nothing bleeds through */
-.bottom-sheet.is-maximized .sheet-card { background: rgb(15, 23, 42); }

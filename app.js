@@ -64,7 +64,11 @@ const DOM = {
   // Drawer
   bottomSheet: document.getElementById('bottomSheet'),
   btnCloseDrawer: document.getElementById('btnCloseDrawer'),
-  drawerHandle: document.getElementById('drawerHandle'),
+  sidePanel: document.getElementById('sidePanel'),
+  panelScroll: document.getElementById('panelScroll'),
+  panelEmpty: document.getElementById('panelEmpty'),
+  panelToggleLabel: document.getElementById('panelToggleLabel'),
+  btnPanelHandle: document.getElementById('btnPanelHandle'),
   drawerHeader: document.getElementById('drawerHeader'),
   btnToggleDrawer: document.getElementById('btnToggleDrawer'),
   btnMaximizeDrawer: document.getElementById('btnMaximizeDrawer'),
@@ -682,14 +686,10 @@ function highlightMultipleFeatures(features, label) {
   showToast(`Menampilkan & highlight ${label} (${features.length} SLS)`, 'info');
 }
 
-const WIDE_LAYOUT = window.matchMedia('(min-width: 768px) and (min-height: 501px)');
-
-/** Keep the map buttons just above the bottom sheet (phones only; wide layouts dock the sheet left). */
-function syncSheetHeight() {
-  const shown = DOM.bottomSheet.classList.contains('show-drawer');
-  const h = shown && !WIDE_LAYOUT.matches ? DOM.bottomSheet.getBoundingClientRect().height : 0;
-  document.documentElement.style.setProperty('--sheet-h', `${Math.round(h)}px`);
-}
+/**
+ * Right panel: status cards + SLS detail. It docks beside the map on wide screens
+ * and below it on phones. "Minimize" collapses it, "Perbesar" (phones) makes it taller.
+ */
 
 /** lucide.createIcons() swaps <i> for <svg>, so a kept reference goes stale: rebuild the tag by id. */
 function setLucideIcon(id, name) {
@@ -704,30 +704,31 @@ function setLucideIcon(id, name) {
 }
 
 function setDrawerMaximized(on) {
-  DOM.bottomSheet.classList.toggle('is-maximized', on);
-  document.body.classList.toggle('sheet-max', on);
+  DOM.sidePanel.classList.toggle('is-maximized', on);
   DOM.btnMaximizeDrawer.setAttribute('aria-label', on ? 'Kecilkan panel' : 'Perbesar panel');
   DOM.btnMaximizeDrawer.title = on ? 'Kecilkan panel' : 'Perbesar panel';
   setLucideIcon('drawerMaxIcon', on ? 'minimize-2' : 'maximize-2');
 }
 
+/** Show the SLS detail card in the panel (and expand the panel unless told otherwise). */
 function openDrawer(minimized = false) {
-  document.body.classList.add('drawer-open');
   hideReopenPill();
   DOM.bottomSheet.classList.remove('hidden-drawer');
   DOM.bottomSheet.classList.add('show-drawer');
+  DOM.panelEmpty.classList.add('hidden');
   if (minimized) {
     minimizeDrawer();
   } else {
     expandDrawer();
+    DOM.bottomSheet.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 }
 
+/** Hide the SLS detail card; the panel shows its hint again. */
 function closeDrawer(clearPill = false) {
-  setDrawerMaximized(false);
-  document.body.classList.remove('drawer-open');
   DOM.bottomSheet.classList.remove('show-drawer');
   DOM.bottomSheet.classList.add('hidden-drawer');
+  DOM.panelEmpty.classList.remove('hidden');
   if (clearPill || !state.selectedFeature) {
     hideReopenPill();
   } else {
@@ -735,19 +736,23 @@ function closeDrawer(clearPill = false) {
   }
 }
 
+function setPanelCollapsed(collapsed) {
+  state.isDrawerMinimized = collapsed;
+  DOM.sidePanel.classList.toggle('is-collapsed', collapsed);
+  document.body.classList.toggle('panel-collapsed', collapsed);
+  DOM.panelToggleLabel.textContent = collapsed ? 'Buka' : 'Minimize';
+  DOM.btnToggleDrawer.setAttribute('aria-label', collapsed ? 'Buka panel' : 'Perkecil panel');
+  DOM.btnToggleDrawer.title = collapsed ? 'Buka panel' : 'Perkecil panel';
+  DOM.btnToggleDrawer.setAttribute('aria-expanded', String(!collapsed));
+}
+
 function minimizeDrawer() {
   setDrawerMaximized(false);
-  document.body.classList.remove('drawer-open');
-  state.isDrawerMinimized = true;
-  DOM.bottomSheet.classList.add('is-minimized');
-  setLucideIcon('drawerToggleIcon', 'chevron-up');
+  setPanelCollapsed(true);
 }
 
 function expandDrawer() {
-  document.body.classList.add('drawer-open');
-  state.isDrawerMinimized = false;
-  DOM.bottomSheet.classList.remove('is-minimized');
-  setLucideIcon('drawerToggleIcon', 'chevron-down');
+  setPanelCollapsed(false);
 }
 
 function toggleDrawerMinimize() {
@@ -1397,49 +1402,14 @@ function initClipboardActions() {
   // Drawer Interactive Controls (Minimalist Hide/Show & Reopen)
   DOM.btnCloseDrawer.addEventListener('click', () => closeDrawer(false));
   
-  DOM.btnMaximizeDrawer.addEventListener('click', (e) => {
-    e.stopPropagation();
+  DOM.btnMaximizeDrawer.addEventListener('click', () => {
     if (state.isDrawerMinimized) expandDrawer();
-    setDrawerMaximized(!DOM.bottomSheet.classList.contains('is-maximized'));
+    setDrawerMaximized(!DOM.sidePanel.classList.contains('is-maximized'));
   });
-  if (DOM.btnToggleDrawer) {
-    DOM.btnToggleDrawer.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleDrawerMinimize();
-    });
-  }
 
-  if (DOM.drawerHandle) {
-    DOM.drawerHandle.addEventListener('click', toggleDrawerMinimize);
-  }
-
-  if (DOM.drawerHeader) {
-    DOM.drawerHeader.addEventListener('click', (e) => {
-      if (state.isDrawerMinimized && !e.target.closest('button')) {
-        expandDrawer();
-      }
-    });
-  }
-
-  if (DOM.btnReopenDrawer) {
-    DOM.btnReopenDrawer.addEventListener('click', () => openDrawer(false));
-  }
-
-  // Smooth mobile touch swipe gesture
-  let touchStartY = 0;
-  DOM.bottomSheet.addEventListener('touchstart', (e) => {
-    touchStartY = e.touches[0].clientY;
-  }, { passive: true });
-
-  DOM.bottomSheet.addEventListener('touchend', (e) => {
-    const touchEndY = e.changedTouches[0].clientY;
-    const diff = touchEndY - touchStartY;
-    if (diff > 45 && !state.isDrawerMinimized) {
-      minimizeDrawer(); // Swiped down -> collapse into sleek minimal bar
-    } else if (diff < -35 && state.isDrawerMinimized) {
-      expandDrawer(); // Swiped up -> expand full card
-    }
-  }, { passive: true });
+  DOM.btnToggleDrawer.addEventListener('click', toggleDrawerMinimize);
+  DOM.btnPanelHandle.addEventListener('click', expandDrawer);
+  DOM.btnReopenDrawer.addEventListener('click', () => openDrawer(false));
 }
 
 /**
@@ -2721,11 +2691,10 @@ function initApp() {
   DOM.btnZoomIn.addEventListener('click', () => state.map.zoomIn());
   DOM.btnZoomOut.addEventListener('click', () => state.map.zoomOut());
 
-  // Keep the map buttons above the bottom sheet as it opens, closes or resizes
-  if (window.ResizeObserver) new ResizeObserver(syncSheetHeight).observe(DOM.bottomSheet);
-  new MutationObserver(syncSheetHeight).observe(DOM.bottomSheet, { attributes: true, attributeFilter: ['class'] });
-  WIDE_LAYOUT.addEventListener('change', syncSheetHeight);
-  syncSheetHeight();
+  // The map is a flex item: whenever the panel or top bar changes size, the map re-measures itself
+  if (window.ResizeObserver) {
+    new ResizeObserver(() => state.map && state.map.invalidateSize()).observe(document.getElementById('mapArea'));
+  }
 
   // Load geojson data
   loadGeoJsonData();
