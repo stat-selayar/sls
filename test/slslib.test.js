@@ -158,3 +158,22 @@ test('mitraForSls ignores partners from other desa', () => {
   const other = { nama: 'Luar', alamat: 'Dusun Bunging', idsls: '', kdkec: '030', kddesa: '004' };
   assert.equal(Lib.mitraForSls([other], sls).length, 0);
 });
+
+/* ------------------------------ theme & panel ------------------------------ */
+
+test('resolveTheme uses the saved choice and defaults to light', () => {
+  assert.equal(Lib.resolveTheme('light'), 'light');
+  assert.equal(Lib.resolveTheme('dark'), 'dark');
+  assert.equal(Lib.resolveTheme(null), 'light');
+  assert.equal(Lib.resolveTheme(undefined), 'light');
+  assert.equal(Lib.resolveTheme('bogus'), 'light');
+});
+
+test('clampPanelSize keeps the panel inside its bounds and tolerates bad input', () => {
+  assert.equal(Lib.clampPanelSize(100, 300, 700), 300);
+  assert.equal(Lib.clampPanelSize(900, 300, 700), 700);
+  assert.equal(Lib.clampPanelSize(420.6, 300, 700), 421);
+  assert.equal(Lib.clampPanelSize('abc', 300, 700, 380), 380);
+  // a tiny container must not push the maximum below the minimum
+  assert.equal(Lib.clampPanelSize(500, 300, 200), 300);
+});
