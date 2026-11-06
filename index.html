@@ -45,6 +45,8 @@
 </head>
 <body class="bg-slate-950 text-slate-100 antialiased select-none flex flex-col h-[100dvh] w-screen overflow-hidden dark">
 
+  <!-- PANEL ROOT: phone = header on top + sheet at the bottom; wide screens = one left column -->
+  <div id="panelRoot" class="pointer-events-none">
   <!-- TOP: search + tool chips (one block) -->
   <header class="absolute top-0 left-0 right-0 z-30 p-2 sm:p-3 pointer-events-none">
     <div class="max-w-2xl mx-auto flex flex-col gap-2">
@@ -97,38 +99,19 @@
     </div>
   </header>
 
-  <!-- MAP CONTAINER -->
-  <main class="relative flex-1 w-full h-full">
-    <div id="map"></div>
-
-    <!-- FLOATING MAP CONTROLS (TOP RIGHT) -->
-    <div class="absolute top-[112px] right-2 sm:right-3 z-20 flex flex-col gap-2 items-end pointer-events-auto">
-      <!-- Tombol Deteksi Lokasi Sekarang (GPS) -->
-      <button 
-        id="btnGps" 
-        class="w-11 h-11 bg-primary hover:bg-primary-dark text-white rounded-2xl shadow-xl border border-sky-400/30 flex items-center justify-center transition active:scale-95 group"
-        title="Deteksi Lokasi Saya Sekarang (GPS)"
-      >
-        <i data-lucide="crosshair" id="gpsIcon" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
-      </button>
-
-      <!-- Tombol Basemap -->
-      <button 
-        id="btnBasemap" 
-        class="w-11 h-11 bg-slate-900/95 backdrop-blur-md text-slate-200 hover:text-sky-400 hover:bg-slate-800 rounded-2xl shadow-xl border border-slate-700/80 flex items-center justify-center transition active:scale-95 group"
-        title="Pilih Basemap (Peta Dasar)"
-      >
-        <i data-lucide="layers" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
-      </button>
-    </div>
-
     <!-- STATUS STACK: aligned with the toolbar; keeps clear of the map buttons on the right -->
     <div id="statusStack" class="absolute top-[112px] inset-x-0 px-2 sm:px-3 z-20 pointer-events-none">
      <div class="max-w-2xl mx-auto pr-14 lg:pr-0 flex flex-col items-start gap-2">
       <!-- Banner mode Cek Mitra -->
       <div id="mitraBanner" role="status" aria-live="polite" class="hidden pointer-events-auto w-full sm:max-w-sm bg-slate-900/95 backdrop-blur-md rounded-2xl border border-slate-700 shadow-xl p-3 text-sm text-slate-200">
-        <p id="mitraBannerText" class="font-medium text-slate-100 leading-snug">Ketuk wilayah di peta untuk melihat mitranya.</p>
-        <div class="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div class="flex items-start gap-2">
+          <p id="mitraBannerText" class="flex-1 min-w-0 font-medium text-slate-100 leading-snug pt-2.5">Ketuk wilayah di peta untuk melihat mitranya.</p>
+          <button id="btnToggleMitraBanner" type="button" aria-expanded="true" aria-controls="mitraBannerDetails" aria-label="Perkecil panel Cek Mitra" title="Perkecil" class="h-11 w-11 -mr-2 -mt-1 flex-shrink-0 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 flex items-center justify-center transition">
+            <i data-lucide="chevron-up" id="mitraBannerIcon" class="w-5 h-5"></i>
+          </button>
+        </div>
+        <div id="mitraBannerDetails">
+        <div class="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <div id="mitraLegend" class="hidden flex items-center gap-x-3 gap-y-1 flex-wrap text-xs text-slate-300">
             <span class="flex items-center gap-1.5"><span class="inline-block w-3.5 h-3.5 rounded-sm bg-teal-500/40 border-2 border-teal-300"></span>Desa ada mitra</span>
             <span class="flex items-center gap-1.5"><span class="inline-block w-3.5 h-3.5 rounded-sm bg-slate-400/10 border border-slate-400"></span>Belum ada</span>
@@ -138,6 +121,7 @@
           </button>
         </div>
         <p id="mitraDataMeta" class="hidden mt-1.5 text-xs text-slate-400"></p>
+        </div>
         <input type="file" id="mitraFileInput" accept=".xlsx, .xls, .csv" class="hidden" />
       </div>
 
@@ -145,7 +129,7 @@
       <div id="sampelWidget" class="hidden flex pointer-events-auto w-full sm:max-w-sm items-center gap-2 bg-slate-900/95 backdrop-blur-md rounded-2xl border border-slate-700 shadow-xl pl-3 pr-1 text-sm text-slate-100">
         <span class="inline-block w-3.5 h-3.5 rounded-sm bg-fuchsia-500/50 border-2 border-fuchsia-300 flex-shrink-0"></span>
         <span id="sampelWidgetTitle" class="font-semibold truncate flex-1 min-w-0">0 SLS Sampel</span>
-        <button id="btnSampelList" type="button" class="h-11 px-3 rounded-xl text-sky-300 hover:bg-slate-800 text-sm font-medium transition">Daftar</button>
+        <button id="btnSampelList" type="button" aria-label="Perbesar daftar sampel" title="Perbesar" class="h-11 px-3 rounded-xl text-sky-300 hover:bg-slate-800 text-sm font-medium transition flex items-center gap-1.5"><i data-lucide="maximize-2" class="w-4 h-4"></i><span>Perbesar</span></button>
         <button id="btnSampelClear" type="button" aria-label="Hapus sorotan sampel" title="Hapus sorotan sampel" class="h-11 w-11 rounded-xl text-slate-400 hover:text-rose-300 hover:bg-slate-800 flex items-center justify-center transition">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
@@ -181,30 +165,18 @@
      </div>
     </div>
 
-    <!-- FLOATING MAP CONTROLS (BOTTOM RIGHT) -->
-    <div class="absolute bottom-6 right-3 sm:right-6 z-20 flex flex-col gap-2.5 items-end pointer-events-auto">
-      <!-- Tombol Home (Reset Selayar) -->
-      <button 
-        id="btnHome" 
-        class="w-11 h-11 bg-slate-900/95 backdrop-blur-md text-slate-200 hover:text-sky-400 hover:bg-slate-800 rounded-2xl shadow-xl border border-slate-700/80 flex items-center justify-center transition active:scale-95 group"
-        title="Kembali ke Tampilan Awal (Kepulauan Selayar)"
-      >
-        <i data-lucide="home" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
-      </button>
-    </div>
-
     <!-- BOTTOM SHEET / DETAIL DRAWER -->
     <div 
       id="bottomSheet" 
       class="bottom-sheet hidden-drawer absolute left-0 right-0 bottom-0 z-30 max-w-xl mx-auto p-3 sm:p-4 pointer-events-auto"
     >
-      <div class="bg-slate-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-700/80 overflow-hidden text-slate-100">
+      <div class="sheet-card bg-slate-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-700/80 overflow-hidden text-slate-100">
         <!-- Drawer Pull Handle -->
         <div class="flex justify-center pt-2.5 pb-1 cursor-pointer" id="drawerHandle">
           <div class="w-12 h-1.5 bg-slate-600 rounded-full"></div>
         </div>
 
-        <div class="px-4 pb-3 sm:px-6 sm:pb-5">
+        <div class="sheet-inner px-4 pb-3 sm:px-6 sm:pb-5">
           <!-- Header SLS Info -->
           <div id="drawerHeader" class="flex items-start justify-between gap-3 pb-2 cursor-pointer select-none">
             <div class="min-w-0 flex-1">
@@ -317,6 +289,30 @@
         </div>
       </div>
     </div>
+
+  </div>
+
+  <!-- MAP CONTAINER -->
+  <main class="relative flex-1 w-full h-full">
+    <div id="map"></div>
+
+    <!-- MAP CONTROLS: one column, bottom-right, rides above the detail sheet on phones -->
+    <div id="mapControls" class="absolute right-2 sm:right-3 z-20 flex flex-col gap-2 items-end pointer-events-auto">
+      <button id="btnGps" type="button" class="map-btn bg-primary hover:bg-primary-dark text-white border-sky-400/30" title="Deteksi lokasi saya (GPS)" aria-label="Deteksi lokasi saya (GPS)">
+        <i data-lucide="crosshair" id="gpsIcon" class="w-5 h-5"></i>
+      </button>
+      <button id="btnBasemap" type="button" class="map-btn" title="Pilih peta dasar" aria-label="Pilih peta dasar">
+        <i data-lucide="layers" class="w-5 h-5"></i>
+      </button>
+      <button id="btnHome" type="button" class="map-btn" title="Kembali ke tampilan awal Kepulauan Selayar" aria-label="Kembali ke tampilan awal">
+        <i data-lucide="home" class="w-5 h-5"></i>
+      </button>
+      <div class="zoom-btns flex flex-col gap-2">
+        <button id="btnZoomIn" type="button" class="map-btn" title="Perbesar" aria-label="Perbesar peta"><i data-lucide="plus" class="w-5 h-5"></i></button>
+        <button id="btnZoomOut" type="button" class="map-btn" title="Perkecil" aria-label="Perkecil peta"><i data-lucide="minus" class="w-5 h-5"></i></button>
+      </div>
+    </div>
+
 
     <!-- Minimalist Floating Reopen Pill (Muncul saat drawer ditutup tetapi SLS masih terpilih) -->
     <button 
@@ -565,9 +561,14 @@
             <p class="text-xs text-slate-400 mt-0.5">SLS sampel di file Excel langsung disorot di peta</p>
           </div>
         </div>
-        <button id="btnCloseSampelModal" type="button" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-800 transition" aria-label="Tutup">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
+        <div class="flex items-center gap-1 flex-shrink-0">
+          <button id="btnMinimizeSampel" type="button" class="hidden w-11 h-11 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800 transition flex items-center justify-center" aria-label="Perkecil ke peta" title="Perkecil ke peta">
+            <i data-lucide="minimize-2" class="w-5 h-5"></i>
+          </button>
+          <button id="btnCloseSampelModal" type="button" class="w-11 h-11 text-slate-400 hover:text-slate-200 rounded-xl hover:bg-slate-800 transition flex items-center justify-center" aria-label="Tutup">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
       </div>
 
       <div class="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">

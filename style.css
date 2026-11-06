@@ -114,8 +114,8 @@ body, html {
 /* Collapsible Drawer Body (Cool Minimalist Hide/Show) */
 .drawer-body {
   transition: max-height 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  max-height: min(calc(100vh - 17rem), 460px);
-  max-height: min(calc(100dvh - 17rem), 460px);
+  max-height: min(max(calc(58vh - 7.5rem), 7rem), 460px);
+  max-height: min(max(calc(58dvh - 7.5rem), 7rem), 460px);
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -427,4 +427,119 @@ header {
 /* On small screens the detail sheet needs the room: hide the status cards while it is open */
 @media (max-width: 639px), (max-height: 500px) {
   body.drawer-open #statusStack { display: none; }
+}
+
+/* ---------- Layout root: phones keep the header on top and a bottom sheet ---------- */
+#panelRoot {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+
+/* Map buttons: one neutral style, one column, bottom-right */
+.map-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(51, 65, 85, 0.9);
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+.map-btn:hover { background: #1e293b; color: #7dd3fc; }
+.map-btn:active { transform: scale(0.94); }
+.map-btn:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
+
+/* On phones the column rides just above the detail sheet (--sheet-h is set from JS) */
+#mapControls {
+  bottom: calc(var(--sheet-h, 0px) + 16px + env(safe-area-inset-bottom, 0px));
+  transition: bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Touch screens pinch to zoom; keep +/- for mouse users only */
+@media (pointer: coarse) {
+  .zoom-btns { display: none; }
+}
+
+/* Phones: while the detail sheet is open keep only GPS and basemap so the column always fits above it */
+@media (max-width: 767px) {
+  body.drawer-open #btnHome,
+  body.drawer-open .zoom-btns { display: none; }
+}
+
+/* Collapsed Cek Mitra card */
+#mitraBanner.is-collapsed #mitraBannerDetails { display: none; }
+
+/* ---------- Wide layout (tablet portrait and up): one left column ---------- */
+@media (min-width: 768px) and (min-height: 501px) {
+  #panelRoot {
+    right: auto;
+    width: 392px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  #panelRoot > header,
+  #panelRoot > #statusStack,
+  #panelRoot > #bottomSheet {
+    position: static;
+    inset: auto;
+    padding: 0;
+    margin: 0;
+    max-width: none;
+    width: 100%;
+    transform: none;
+    flex: none;
+  }
+  #panelRoot > header > div,
+  #panelRoot > #statusStack > div {
+    max-width: none;
+    margin: 0;
+    padding-right: 0;
+  }
+  .chip-row {
+    flex-wrap: wrap;
+    overflow: visible;
+    margin: 0;
+    padding: 0;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  #panelRoot > #bottomSheet {
+    flex: 0 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  #bottomSheet.hidden-drawer { display: none; }
+  .sheet-card {
+    min-height: 0;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .sheet-inner {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1 1 auto;
+  }
+  .drawer-body {
+    max-height: none;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .bottom-sheet.is-minimized .drawer-body { max-height: 0 !important; flex: 0 0 auto; }
+  #mapControls { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+  #btnReopenDrawer { left: calc(50% + 196px); }
+}
+
+/* Landscape phones: the sheet is centred and the buttons sit beside it, so do not stack them above it */
+@media (max-height: 500px) {
+  #mapControls { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+  .zoom-btns { display: none; }
 }
