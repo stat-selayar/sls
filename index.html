@@ -63,7 +63,7 @@
 
   <!-- TOP BAR: brand, search and tools -->
   <header id="topBar" class="relative z-40 flex-none bg-slate-950 border-b border-slate-800 px-2 sm:px-3 py-2">
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex items-center gap-2">
       <div id="brand" class="hidden md:flex items-center gap-2.5 mr-1 flex-shrink-0">
         <span class="w-9 h-9 rounded-xl bg-sky-500/15 border border-sky-400/30 flex items-center justify-center text-sky-300"><i data-lucide="map" class="w-5 h-5"></i></span>
         <div class="leading-tight">
@@ -72,7 +72,7 @@
         </div>
       </div>
       <!-- Search -->
-      <div class="relative flex-1 min-w-[200px] md:max-w-md rounded-2xl bg-slate-900 border border-slate-700 transition-all focus-within:ring-2 focus-within:ring-primary/50 focus-within:border-primary">
+      <div class="relative flex-1 min-w-0 md:max-w-md rounded-2xl bg-slate-900 border border-slate-700 transition-all focus-within:ring-2 focus-within:ring-primary/50 focus-within:border-primary">
         <div class="flex items-center px-3.5 h-12">
           <i data-lucide="search" class="w-5 h-5 text-slate-400 mr-2 flex-shrink-0"></i>
           <input
@@ -94,30 +94,13 @@
         </div>
       </div>
 
-      <nav aria-label="Alat peta" class="chip-row flex items-center gap-2 overflow-x-auto order-last w-full lg:order-none lg:w-auto">
-        <button id="btnToggleMitra" type="button" aria-pressed="false" class="chip" title="Lihat mitra di setiap SLS pada peta OpenStreetMap">
-          <i data-lucide="users" class="w-4 h-4"></i>
-          <span id="btnToggleMitraLabel">Cek Mitra</span>
-        </button>
-        <button id="btnOpenSampelModal" type="button" class="chip" title="Upload daftar SLS sampel (Excel) untuk disorot di peta">
-          <i data-lucide="target" class="w-4 h-4"></i>
-          <span>Upload Sampel</span>
-        </button>
-        <button id="btnOpenFilterModal" type="button" class="chip" title="Pilih kecamatan, desa, dan SLS">
-          <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
-          <span>Filter</span>
-        </button>
-        <span class="chip-sep" role="separator" aria-hidden="true"></span>
-        <button id="btnOpenCoordModal" type="button" class="chip" title="Cek koordinat manual">
-          <i data-lucide="map-pin" class="w-4 h-4"></i>
-          <span>Koordinat</span>
-        </button>
-        <button id="btnOpenExcelModal" type="button" class="chip" title="Upload file Excel / CSV koordinat (banyak titik)">
-          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-          <span>Titik Excel</span>
-        </button>
-      </nav>
-      <button id="btnTheme" type="button" class="chip chip-icon" aria-label="Ganti ke tema terang" title="Ganti ke tema terang">
+      <button id="btnOpenFilterModal" type="button" class="chip chip-icon" aria-label="Filter wilayah" title="Filter wilayah (kecamatan, desa, SLS)">
+        <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
+      </button>
+      <button id="btnOpenCoordModal" type="button" class="chip chip-icon" aria-label="Cek koordinat" title="Cek koordinat (satu titik atau upload Excel)">
+        <i data-lucide="map-pin" class="w-5 h-5"></i>
+      </button>
+      <button id="btnTheme" type="button" class="chip chip-icon ml-auto" aria-label="Ganti ke tema terang" title="Ganti ke tema terang">
         <i data-lucide="sun" id="themeIcon" class="w-5 h-5"></i>
       </button>
     </div>
@@ -166,6 +149,17 @@
             <i data-lucide="chevron-right" id="drawerToggleIcon" class="w-4 h-4 panel-chevron"></i>
           </button>
         </div>
+      </div>
+
+      <div id="panelTools" class="panel-tools flex-none grid grid-cols-2 gap-2 px-3 pt-3">
+        <button id="btnToggleMitra" type="button" aria-pressed="false" class="chip" title="Lihat mitra di setiap SLS pada peta OpenStreetMap">
+          <i data-lucide="users" class="w-4 h-4"></i>
+          <span id="btnToggleMitraLabel">Cek Mitra</span>
+        </button>
+        <button id="btnOpenSampelModal" type="button" class="chip" title="Upload daftar SLS sampel (Excel) untuk disorot di peta">
+          <i data-lucide="target" class="w-4 h-4"></i>
+          <span>Upload Sampel</span>
+        </button>
       </div>
 
       <div id="panelScroll" class="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
@@ -470,103 +464,48 @@
   </div>
 
   <!-- MODAL: INPUT KOORDINAT MANUAL -->
-  <div id="modalCoord" class="modal-overlay hidden-modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-    <div class="bg-slate-900 rounded-3xl shadow-2xl border border-slate-700/80 w-full max-w-md overflow-hidden p-5 animate-in fade-in zoom-in-95 duration-150 text-slate-100">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-        <div class="flex items-center gap-2">
-          <i data-lucide="map-pin" class="w-5 h-5 text-sky-400"></i>
-          <h3 class="font-bold text-slate-100 text-base">Cek Titik Koordinat</h3>
+  <div id="modalCoord" class="modal-overlay hidden-modal fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm">
+    <div class="dlg w-full max-w-md max-h-[90dvh] flex flex-col">
+      <div class="dlg-head">
+        <span class="dlg-icon"><i data-lucide="map-pin" class="w-5 h-5"></i></span>
+        <div class="flex-1 min-w-0">
+          <h3 class="dlg-title">Cek koordinat</h3>
+          <p class="dlg-sub">Cari SLS dari satu titik atau banyak titik</p>
         </div>
-        <button id="btnCloseCoordModal" class="text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-slate-800 transition">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
+        <button id="btnCloseCoordModal" type="button" class="dlg-close" aria-label="Tutup"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
 
-      <div class="mt-4 space-y-3.5">
-        <!-- Shortcut Banner ke Upload Excel -->
-        <div class="p-3 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 flex items-center justify-between gap-2.5">
-          <div class="flex items-center gap-2.5 min-w-0">
-            <div class="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
-              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-            </div>
-            <div class="min-w-0">
-              <div class="text-xs font-bold text-slate-100">Banyak Titik Sekaligus?</div>
-              <div class="text-xs text-slate-400 truncate">Upload file Excel (.xlsx / .csv)</div>
-            </div>
-          </div>
-          <button 
-            id="btnSwitchToExcelFromCoord" 
-            type="button"
-            class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow transition whitespace-nowrap flex-shrink-0 active:scale-95"
-          >
-            Upload Excel
-          </button>
-        </div>
-
+      <div class="dlg-body space-y-3 overflow-y-auto flex-1">
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">
-            Format Cepat (Salin dari Google Maps / CAPI)
-          </label>
-          <input 
-            type="text" 
-            id="inputCoordQuick" 
-            placeholder="Contoh: -6.49178, 120.48547" 
-            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-500 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none font-mono"
-          />
-          <p class="text-xs text-slate-400 mt-1">Mendukung format paste `Latitude, Longitude` sekaligus.</p>
-        </div>
-
-        <div class="relative flex items-center justify-center">
-          <div class="border-t border-slate-800 w-full"></div>
-          <span class="bg-slate-900 px-2 text-xs text-slate-400 uppercase font-semibold">atau input manual</span>
-          <div class="border-t border-slate-800 w-full"></div>
+          <label class="field-label" for="inputCoordQuick">Tempel koordinat (Google Maps / CAPI)</label>
+          <input type="text" id="inputCoordQuick" placeholder="-6.49178, 120.48547" class="field font-mono" autocomplete="off" />
         </div>
 
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Latitude (Lintang)</label>
-            <input 
-              type="number" 
-              step="any" 
-              id="inputLat" 
-              placeholder="-6.49178" 
-              class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-500 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none font-mono"
-            />
+            <label class="field-label" for="inputLat">Latitude</label>
+            <input type="number" step="any" id="inputLat" placeholder="-6.49178" class="field font-mono" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Longitude (Bujur)</label>
-            <input 
-              type="number" 
-              step="any" 
-              id="inputLng" 
-              placeholder="120.48547" 
-              class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-500 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none font-mono"
-            />
+            <label class="field-label" for="inputLng">Longitude</label>
+            <input type="number" step="any" id="inputLng" placeholder="120.48547" class="field font-mono" />
           </div>
         </div>
 
-        <!-- Contoh Titik Cepat -->
-        <div>
-          <span class="text-xs font-semibold text-slate-400 block mb-1">Contoh Titik Sampel:</span>
-          <div class="flex flex-wrap gap-1.5">
-            <button class="sample-coord-btn px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 font-mono transition" data-lat="-6.1215" data-lng="120.4623">
-              Kota Benteng
-            </button>
-            <button class="sample-coord-btn px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 font-mono transition" data-lat="-6.4907" data-lng="120.4828">
-              Bunging, Appatanah
-            </button>
-            <button class="sample-coord-btn px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 font-mono transition" data-lat="-6.7025" data-lng="121.1520">
-              Takabonerate
-            </button>
-          </div>
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class="text-xs text-slate-400 mr-0.5">Contoh:</span>
+          <button type="button" class="sample-coord-btn chip-sm" data-lat="-6.1215" data-lng="120.4623">Kota Benteng</button>
+          <button type="button" class="sample-coord-btn chip-sm" data-lat="-6.4907" data-lng="120.4828">Bunging, Appatanah</button>
+          <button type="button" class="sample-coord-btn chip-sm" data-lat="-6.7025" data-lng="121.1520">Takabonerate</button>
         </div>
+      </div>
 
-        <button 
-          id="btnSubmitCoord" 
-          class="w-full mt-2 h-11 bg-primary hover:bg-primary-dark text-white font-semibold text-sm rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2"
-        >
-          <i data-lucide="crosshair" class="w-4 h-4"></i>
-          <span>Periksa Posisi SLS</span>
+      <div class="dlg-foot flex-col">
+        <button id="btnSubmitCoord" type="button" class="btn btn-primary w-full">
+          <i data-lucide="crosshair" class="w-4 h-4"></i><span>Periksa posisi SLS</span>
+        </button>
+        <button id="btnSwitchToExcelFromCoord" type="button" class="btn btn-ghost w-full">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i><span>Banyak titik? Upload Excel / CSV</span>
         </button>
       </div>
     </div>
@@ -632,21 +571,14 @@
 
   <!-- MODAL: UPLOAD EXCEL / CSV KOORDINAT -->
   <div id="modalExcel" class="modal-overlay hidden-modal fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm">
-    <div class="bg-slate-900 rounded-3xl shadow-2xl border border-slate-700/80 w-full max-w-xl max-h-[90dvh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 text-slate-100">
-      <!-- Modal Header -->
-      <div class="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 flex-shrink-0">
-        <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 flex-shrink-0">
-            <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <h3 class="font-bold text-slate-100 text-base leading-tight">Upload Koordinat Excel / CSV</h3>
-            <p class="text-xs text-slate-400 mt-0.5">Plot banyak titik dan verifikasi batas SLS otomatis</p>
-          </div>
+    <div class="dlg w-full max-w-xl max-h-[90dvh] flex flex-col">
+      <div class="dlg-head">
+        <span class="dlg-icon"><i data-lucide="file-spreadsheet" class="w-5 h-5"></i></span>
+        <div class="flex-1 min-w-0">
+          <h3 class="dlg-title">Upload koordinat Excel / CSV</h3>
+          <p class="dlg-sub">Plot banyak titik dan cek batas SLS otomatis</p>
         </div>
-        <button id="btnCloseExcelModal" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-800 transition">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
+        <button id="btnCloseExcelModal" type="button" class="dlg-close" aria-label="Tutup"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
 
       <!-- Modal Content (Scrollable) -->

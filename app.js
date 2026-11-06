@@ -108,7 +108,6 @@ const DOM = {
   filterSls: document.getElementById('filterSls'),
   btnApplyFilter: document.getElementById('btnApplyFilter'),
   // Excel Modal & Controls
-  btnOpenExcelModal: document.getElementById('btnOpenExcelModal'),
   modalExcel: document.getElementById('modalExcel'),
   btnCloseExcelModal: document.getElementById('btnCloseExcelModal'),
   excelUploadSection: document.getElementById('excelUploadSection'),
@@ -1497,11 +1496,6 @@ function initModalBackdrops() {
  */
 function initExcelModal() {
   // Modal Open/Close
-  DOM.btnOpenExcelModal.addEventListener('click', () => {
-    DOM.modalExcel.classList.remove('hidden-modal');
-    DOM.modalExcel.classList.add('show-modal');
-  });
-
   DOM.btnCloseExcelModal.addEventListener('click', () => {
     DOM.modalExcel.classList.remove('show-modal');
     DOM.modalExcel.classList.add('hidden-modal');
@@ -2255,7 +2249,7 @@ function updateMitraUi() {
   const on = state.mitraMode;
   const loaded = state.mitraList.length > 0;
   DOM.btnToggleMitra.setAttribute('aria-pressed', String(on));
-  DOM.btnToggleMitraLabel.textContent = on ? 'Keluar Cek Mitra' : 'Cek Mitra';
+  DOM.btnToggleMitra.title = on ? 'Keluar dari mode Cek Mitra' : 'Lihat mitra di setiap SLS pada peta OpenStreetMap';
   DOM.mitraBanner.classList.toggle('hidden', !on);
   DOM.mitraLegend.classList.toggle('hidden', !loaded);
   const collapsed = state.mitraBannerCollapsed;

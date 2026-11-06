@@ -426,23 +426,6 @@ header {
 .chip[aria-pressed="true"] { background: #0d9488; border-color: #5eead4; color: #fff; }
 .chip[aria-pressed="true"] svg { color: #fff !important; }
 
-.chip-row {
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  scroll-snap-type: x proximity;
-  scroll-padding-inline: 0.5rem;
-}
-.chip-row::-webkit-scrollbar { display: none; }
-.chip-row .chip { scroll-snap-align: start; }
-
-/* Hint that the toolbar scrolls sideways on phones */
-@media (max-width: 639px) {
-  .chip-row {
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
-    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
-  }
-}
-
 /* Map buttons: one neutral style, one column */
 .map-btn {
   width: 44px;
@@ -507,15 +490,13 @@ header {
   #mapControls { right: auto; left: 12px; align-items: flex-start; }
 }
 
-/* Short landscape screens: keep the top bar to one row */
+/* Short landscape screens: the brand makes way for the map */
 @media (max-height: 500px) {
   #brand { display: none; }
-  #topBar nav { order: 0; width: auto; }
 }
 
 /* ---------- Theme toggle, toolbar separator ---------- */
 .chip-icon { width: 44px; padding: 0; justify-content: center; }
-.chip-sep { flex-shrink: 0; width: 1px; height: 24px; background: rgb(var(--slate-700)); }
 .chip svg { color: rgb(var(--slate-300)); }
 .chip[aria-pressed="true"] svg { color: #fff; }
 
@@ -683,3 +664,18 @@ body.is-resizing #map { pointer-events: none; }
 :root[data-theme="light"] .excel-point-popup .leaflet-popup-content-wrapper { box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.25) !important; }
 :root[data-theme="light"] .sls-tooltip { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2) !important; }
 :root[data-theme="light"] .chip[aria-pressed="true"] { background: #0f766e; border-color: #0f766e; }
+
+/* Tool buttons at the top of the right panel */
+.panel-tools .chip { min-width: 0; justify-content: center; padding: 0 0.5rem; }
+.panel-tools .chip span { overflow: hidden; text-overflow: ellipsis; }
+.chip-sm {
+  height: 32px;
+  padding: 0 0.625rem;
+  border-radius: 0.625rem;
+  font-size: 0.75rem;
+  background: rgb(var(--slate-800));
+  border: 1px solid rgb(var(--slate-700));
+  color: rgb(var(--slate-300));
+  transition: background-color 0.15s ease;
+}
+.chip-sm:hover { background: rgb(var(--slate-700)); }
