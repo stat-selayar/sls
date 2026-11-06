@@ -141,7 +141,6 @@ const DOM = {
   mitraBanner: document.getElementById('mitraBanner'),
   mitraBannerText: document.getElementById('mitraBannerText'),
   mitraLegend: document.getElementById('mitraLegend'),
-  btnExitMitra: document.getElementById('btnExitMitra'),
   btnLoadMitra: document.getElementById('btnLoadMitra'),
   btnLoadMitraLabel: document.getElementById('btnLoadMitraLabel'),
   mitraFileInput: document.getElementById('mitraFileInput'),
@@ -680,6 +679,7 @@ function highlightMultipleFeatures(features, label) {
 }
 
 function openDrawer(minimized = false) {
+  document.body.classList.add('drawer-open');
   hideReopenPill();
   DOM.bottomSheet.classList.remove('hidden-drawer');
   DOM.bottomSheet.classList.add('show-drawer');
@@ -691,6 +691,7 @@ function openDrawer(minimized = false) {
 }
 
 function closeDrawer(clearPill = false) {
+  document.body.classList.remove('drawer-open');
   DOM.bottomSheet.classList.remove('show-drawer');
   DOM.bottomSheet.classList.add('hidden-drawer');
   if (clearPill || !state.selectedFeature) {
@@ -701,6 +702,7 @@ function closeDrawer(clearPill = false) {
 }
 
 function minimizeDrawer() {
+  document.body.classList.remove('drawer-open');
   state.isDrawerMinimized = true;
   DOM.bottomSheet.classList.add('is-minimized');
   if (DOM.drawerToggleIcon) {
@@ -710,6 +712,7 @@ function minimizeDrawer() {
 }
 
 function expandDrawer() {
+  document.body.classList.add('drawer-open');
   state.isDrawerMinimized = false;
   DOM.bottomSheet.classList.remove('is-minimized');
   if (DOM.drawerToggleIcon) {
@@ -2200,7 +2203,6 @@ function readWorkbookSheets(file) {
  */
 function initMitra() {
   DOM.btnToggleMitra.addEventListener('click', () => (state.mitraMode ? exitMitraMode() : enterMitraMode()));
-  DOM.btnExitMitra.addEventListener('click', exitMitraMode);
   DOM.btnLoadMitra.addEventListener('click', () => DOM.mitraFileInput.click());
   DOM.mitraFileInput.addEventListener('change', (e) => {
     const file = e.target.files && e.target.files[0];
@@ -2244,15 +2246,18 @@ function updateMitraUi() {
   const loaded = state.mitraList.length > 0;
   DOM.btnToggleMitra.setAttribute('aria-pressed', String(on));
   DOM.btnToggleMitraLabel.textContent = on ? 'Keluar Cek Mitra' : 'Cek Mitra';
-  DOM.btnToggleMitra.classList.toggle('ring-2', on);
-  DOM.btnToggleMitra.classList.toggle('ring-teal-300', on);
   DOM.mitraBanner.classList.toggle('hidden', !on);
   DOM.mitraLegend.classList.toggle('hidden', !loaded);
   DOM.mitraBannerText.textContent = loaded
-    ? 'Mode Cek Mitra aktif. Ketuk wilayah di peta untuk melihat mitranya.'
-    : 'Mode Cek Mitra aktif. Muat data mitra dulu, lalu ketuk wilayah di peta.';
-  DOM.btnLoadMitraLabel.textContent = loaded ? 'Ganti Data Mitra' : 'Muat Data Mitra';
-  DOM.mitraDataMeta.textContent = loaded ? `${state.mitraList.length} mitra · ${state.mitraSource}` : '';
+    ? 'Ketuk wilayah di peta untuk melihat mitranya.'
+    : 'Muat data mitra dulu, lalu ketuk wilayah di peta.';
+  DOM.btnLoadMitraLabel.textContent = loaded ? 'Ganti Data' : 'Muat Data Mitra';
+  DOM.btnLoadMitra.classList.toggle('bg-slate-700', loaded);
+  DOM.btnLoadMitra.classList.toggle('hover:bg-slate-600', loaded);
+  DOM.btnLoadMitra.classList.toggle('bg-teal-600', !loaded);
+  DOM.btnLoadMitra.classList.toggle('hover:bg-teal-500', !loaded);
+  DOM.mitraDataMeta.classList.toggle('hidden', !loaded);
+  DOM.mitraDataMeta.textContent = loaded ? `${state.mitraList.length} mitra dari ${state.mitraSource}` : '';
 }
 
 function setMitraData(list, source) {
@@ -2516,9 +2521,6 @@ async function handleSampelFile(file) {
   plotSampel();
   renderSampelResult();
   showSampelView('result');
-  if (matched.length > 0) {
-    showToast(`${matched.length} dari ${state.sampel.total} SLS sampel ditemukan.`, 'success');
-  }
   if (state.selectedFeature) renderSampelInfo(state.selectedFeature);
 }
 
