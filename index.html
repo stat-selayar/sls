@@ -43,23 +43,26 @@
   <!-- Custom Styles -->
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-950 text-slate-100 antialiased select-none flex flex-col h-screen w-screen overflow-hidden dark">
+<body class="bg-slate-950 text-slate-100 antialiased select-none flex flex-col h-[100dvh] w-screen overflow-hidden dark">
 
-  <!-- TOP HEADER / SEARCH BAR -->
+  <!-- PANEL ROOT: phone = header on top + sheet at the bottom; wide screens = one left column -->
+  <div id="panelRoot" class="pointer-events-none">
+  <!-- TOP: search + tool chips (one block) -->
   <header class="absolute top-0 left-0 right-0 z-30 p-2 sm:p-3 pointer-events-none">
-    <div class="max-w-2xl mx-auto flex items-center gap-2">
-      <!-- Search Input Wrapper -->
-      <div class="relative flex-1 pointer-events-auto shadow-2xl rounded-2xl bg-slate-900 border border-slate-700 transition-all focus-within:ring-2 focus-within:ring-primary/50 focus-within:border-primary">
-        <div class="flex items-center px-3.5 py-2.5">
+    <div class="max-w-2xl mx-auto flex flex-col gap-2">
+      <!-- Search -->
+      <div class="relative pointer-events-auto shadow-2xl rounded-2xl bg-slate-900 border border-slate-700 transition-all focus-within:ring-2 focus-within:ring-primary/50 focus-within:border-primary">
+        <div class="flex items-center px-3.5 h-12">
           <i data-lucide="search" class="w-5 h-5 text-slate-400 mr-2 flex-shrink-0"></i>
-          <input 
-            type="text" 
-            id="searchInput" 
-            placeholder="Cari SLS, Desa, Kecamatan, atau ID SLS..." 
-            class="w-full bg-transparent text-sm sm:text-base text-slate-100 placeholder-slate-400 focus:outline-none"
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Cari SLS, desa, atau kecamatan"
+            aria-label="Cari SLS, desa, atau kecamatan"
+            class="w-full bg-transparent text-base text-slate-100 placeholder-slate-400 focus:outline-none"
             autocomplete="off"
           />
-          <button id="clearSearchBtn" class="hidden text-slate-400 hover:text-slate-200 p-1 mr-1">
+          <button id="clearSearchBtn" type="button" aria-label="Hapus pencarian" class="hidden text-slate-400 hover:text-slate-200 w-9 h-9 -mr-2 flex items-center justify-center">
             <i data-lucide="x" class="w-4 h-4"></i>
           </button>
         </div>
@@ -70,123 +73,66 @@
         </div>
       </div>
 
-      <!-- Quick Action: Input Koordinat Modal Trigger -->
-      <button 
-        id="btnOpenCoordModal" 
-        class="pointer-events-auto h-11 px-3 sm:px-3.5 bg-slate-900/95 backdrop-blur-md hover:bg-slate-800 text-slate-200 font-medium text-xs sm:text-sm rounded-2xl shadow-xl border border-slate-700/80 flex items-center gap-1.5 transition active:scale-95 flex-shrink-0"
-        title="Input Koordinat Manual"
-      >
-        <i data-lucide="map-pin" class="w-4 h-4 text-sky-400"></i>
-        <span class="hidden md:inline">Cek Koordinat</span>
-      </button>
-
-      <!-- Quick Action: Upload Excel Modal Trigger -->
-      <button 
-        id="btnOpenExcelModal" 
-        class="pointer-events-auto h-11 px-3 sm:px-3.5 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 font-semibold text-xs sm:text-sm rounded-2xl shadow-xl border border-emerald-500/60 flex items-center gap-1.5 transition active:scale-95 flex-shrink-0"
-        title="Upload File Excel / CSV Koordinat (Banyak Titik)"
-      >
-        <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i>
-        <span class="inline"><span class="hidden sm:inline">Upload </span>Excel</span>
-      </button>
-
-      <!-- Quick Action: Filter Hierarki Wilayah Trigger -->
-      <button 
-        id="btnOpenFilterModal" 
-        class="pointer-events-auto h-11 px-3 sm:px-3.5 bg-slate-900/95 backdrop-blur-md hover:bg-slate-800 text-slate-200 font-medium text-xs sm:text-sm rounded-2xl shadow-xl border border-slate-700/80 flex items-center gap-1.5 transition active:scale-95 flex-shrink-0"
-        title="Pilih Kecamatan & Desa"
-      >
-        <i data-lucide="sliders-horizontal" class="w-4 h-4 text-amber-400"></i>
-        <span class="hidden md:inline">Filter</span>
-      </button>
+      <!-- Tools: one neutral row, scrolls sideways on narrow screens -->
+      <nav aria-label="Alat peta" class="chip-row -mx-2 px-2 sm:mx-0 sm:px-0 flex items-center gap-2 overflow-x-auto pointer-events-auto">
+        <button id="btnToggleMitra" type="button" aria-pressed="false" class="chip" title="Lihat mitra di setiap SLS pada peta OpenStreetMap">
+          <i data-lucide="users" class="w-4 h-4 text-teal-300"></i>
+          <span id="btnToggleMitraLabel">Cek Mitra</span>
+        </button>
+        <button id="btnOpenSampelModal" type="button" class="chip" title="Upload daftar SLS sampel (Excel) untuk disorot di peta">
+          <i data-lucide="target" class="w-4 h-4 text-fuchsia-300"></i>
+          <span>Upload Sampel</span>
+        </button>
+        <button id="btnOpenCoordModal" type="button" class="chip" title="Cek koordinat manual">
+          <i data-lucide="map-pin" class="w-4 h-4 text-sky-300"></i>
+          <span>Koordinat</span>
+        </button>
+        <button id="btnOpenExcelModal" type="button" class="chip" title="Upload file Excel / CSV koordinat (banyak titik)">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-300"></i>
+          <span>Excel</span>
+        </button>
+        <button id="btnOpenFilterModal" type="button" class="chip" title="Pilih kecamatan dan desa">
+          <i data-lucide="sliders-horizontal" class="w-4 h-4 text-amber-300"></i>
+          <span>Filter</span>
+        </button>
+      </nav>
     </div>
   </header>
 
-  <!-- MODE BUTTONS: Cek Mitra & Upload SLS Sampel -->
-  <div class="absolute top-[58px] sm:top-[66px] left-0 right-0 z-30 px-2 sm:px-3 pointer-events-none">
-    <div class="max-w-2xl mx-auto flex items-center gap-2">
-      <button
-        id="btnToggleMitra"
-        type="button"
-        aria-pressed="false"
-        class="pointer-events-auto h-11 px-4 bg-teal-950/90 hover:bg-teal-900 text-teal-200 font-semibold text-sm rounded-2xl shadow-xl border border-teal-500/60 flex items-center gap-2 transition active:scale-95 flex-shrink-0"
-        title="Lihat mitra di setiap SLS pada peta OpenStreetMap"
-      >
-        <i data-lucide="users" class="w-4 h-4 text-teal-300"></i>
-        <span id="btnToggleMitraLabel">Cek Mitra</span>
-      </button>
-      <button
-        id="btnOpenSampelModal"
-        type="button"
-        class="pointer-events-auto h-11 px-4 bg-fuchsia-950/80 hover:bg-fuchsia-900 text-fuchsia-200 font-semibold text-sm rounded-2xl shadow-xl border border-fuchsia-500/60 flex items-center gap-2 transition active:scale-95 flex-shrink-0"
-        title="Upload daftar SLS sampel (Excel) untuk disorot di peta"
-      >
-        <i data-lucide="target" class="w-4 h-4 text-fuchsia-300"></i>
-        <span>Upload Sampel</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- MAP CONTAINER -->
-  <main class="relative flex-1 w-full h-full">
-    <div id="map"></div>
-
-    <!-- FLOATING MAP CONTROLS (TOP RIGHT) -->
-    <div class="absolute top-[112px] sm:top-[124px] right-3 z-20 flex flex-col gap-2.5 items-end pointer-events-auto">
-      <!-- Tombol Deteksi Lokasi Sekarang (GPS) -->
-      <button 
-        id="btnGps" 
-        class="w-11 h-11 bg-primary hover:bg-primary-dark text-white rounded-2xl shadow-xl border border-sky-400/30 flex items-center justify-center transition active:scale-95 group"
-        title="Deteksi Lokasi Saya Sekarang (GPS)"
-      >
-        <i data-lucide="crosshair" id="gpsIcon" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
-      </button>
-
-      <!-- Tombol Basemap -->
-      <button 
-        id="btnBasemap" 
-        class="w-11 h-11 bg-slate-900/95 backdrop-blur-md text-slate-200 hover:text-sky-400 hover:bg-slate-800 rounded-2xl shadow-xl border border-slate-700/80 flex items-center justify-center transition active:scale-95 group"
-        title="Pilih Basemap (Peta Dasar)"
-      >
-        <i data-lucide="layers" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
-      </button>
-    </div>
-
-    <!-- STATUS STACK (kiri atas): banner Cek Mitra, widget sampel, widget titik Excel -->
-    <div id="statusStack" class="absolute top-[112px] left-3 right-[68px] sm:right-auto sm:w-[340px] z-20 flex flex-col gap-2 pointer-events-none">
+    <!-- STATUS STACK: aligned with the toolbar; keeps clear of the map buttons on the right -->
+    <div id="statusStack" class="absolute top-[112px] inset-x-0 px-2 sm:px-3 z-20 pointer-events-none">
+     <div class="max-w-2xl mx-auto pr-14 lg:pr-0 flex flex-col items-start gap-2">
       <!-- Banner mode Cek Mitra -->
-      <div id="mitraBanner" role="status" aria-live="polite" class="hidden pointer-events-auto bg-slate-900/95 backdrop-blur-md rounded-2xl border border-teal-500/50 shadow-2xl p-3 text-xs text-slate-200">
-        <div class="flex items-start justify-between gap-2">
-          <p id="mitraBannerText" class="font-semibold text-slate-100 leading-snug">Mode Cek Mitra aktif. Ketuk wilayah di peta untuk melihat mitranya.</p>
-          <button id="btnExitMitra" type="button" class="flex-shrink-0 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-xs font-semibold">Keluar</button>
-        </div>
-        <div id="mitraLegend" class="hidden mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-300">
-          <span class="flex items-center gap-1.5"><span class="inline-block w-3.5 h-3.5 rounded-sm bg-teal-500/40 border-2 border-teal-300"></span>Desa ada mitra</span>
-          <span class="flex items-center gap-1.5"><span class="inline-block w-3.5 h-3.5 rounded-sm bg-slate-400/10 border border-slate-400"></span>Belum ada mitra</span>
-        </div>
-        <div id="mitraLoadRow" class="mt-2 flex flex-wrap items-center gap-2">
-          <button id="btnLoadMitra" type="button" class="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
-            <i data-lucide="upload" class="w-3.5 h-3.5"></i><span id="btnLoadMitraLabel">Muat Data Mitra</span>
+      <div id="mitraBanner" role="status" aria-live="polite" class="hidden pointer-events-auto w-full sm:max-w-sm bg-slate-900/95 backdrop-blur-md rounded-2xl border border-slate-700 shadow-xl p-3 text-sm text-slate-200">
+        <div class="flex items-start gap-2">
+          <p id="mitraBannerText" class="flex-1 min-w-0 font-medium text-slate-100 leading-snug pt-2.5">Ketuk wilayah di peta untuk melihat mitranya.</p>
+          <button id="btnToggleMitraBanner" type="button" aria-expanded="true" aria-controls="mitraBannerDetails" aria-label="Perkecil panel Cek Mitra" title="Perkecil" class="h-11 w-11 -mr-2 -mt-1 flex-shrink-0 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 flex items-center justify-center transition">
+            <i data-lucide="chevron-up" id="mitraBannerIcon" class="w-5 h-5"></i>
           </button>
-          <span id="mitraDataMeta" class="text-[11px] text-slate-400"></span>
-          <input type="file" id="mitraFileInput" accept=".xlsx, .xls, .csv" class="hidden" />
         </div>
+        <div id="mitraBannerDetails">
+        <div class="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <div id="mitraLegend" class="hidden flex items-center gap-x-3 gap-y-1 flex-wrap text-xs text-slate-300">
+            <span class="flex items-center gap-1.5"><span class="inline-block w-3.5 h-3.5 rounded-sm bg-teal-500/40 border-2 border-teal-300"></span>Desa ada mitra</span>
+            <span class="flex items-center gap-1.5"><span class="inline-block w-3.5 h-3.5 rounded-sm bg-slate-400/10 border border-slate-400"></span>Belum ada</span>
+          </div>
+          <button id="btnLoadMitra" type="button" class="h-11 px-3.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-sm font-semibold flex items-center gap-1.5 active:scale-95 transition">
+            <i data-lucide="upload" class="w-4 h-4"></i><span id="btnLoadMitraLabel">Muat Data Mitra</span>
+          </button>
+        </div>
+        <p id="mitraDataMeta" class="hidden mt-1.5 text-xs text-slate-400"></p>
+        </div>
+        <input type="file" id="mitraFileInput" accept=".xlsx, .xls, .csv" class="hidden" />
       </div>
 
       <!-- Widget sampel -->
-      <div id="sampelWidget" class="hidden pointer-events-auto bg-slate-900/95 backdrop-blur-md rounded-2xl border border-fuchsia-500/50 shadow-2xl p-2.5 text-xs text-slate-200 flex flex-col gap-2 max-w-[260px]">
-        <div class="flex items-center gap-1.5 min-w-0">
-          <span class="inline-block w-3.5 h-3.5 rounded-sm bg-fuchsia-500/40 border-2 border-fuchsia-300 flex-shrink-0"></span>
-          <span id="sampelWidgetTitle" class="font-bold text-slate-100 truncate">0 SLS Sampel</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <button id="btnSampelList" type="button" class="flex-1 py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-medium flex items-center justify-center gap-1.5 transition">
-            <i data-lucide="list" class="w-3.5 h-3.5 text-fuchsia-300"></i><span>Daftar Sampel</span>
-          </button>
-          <button id="btnSampelClear" type="button" class="py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 text-xs font-medium flex items-center gap-1 transition" title="Hapus sorotan sampel">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i><span>Hapus</span>
-          </button>
-        </div>
+      <div id="sampelWidget" class="hidden flex pointer-events-auto w-full sm:max-w-sm items-center gap-2 bg-slate-900/95 backdrop-blur-md rounded-2xl border border-slate-700 shadow-xl pl-3 pr-1 text-sm text-slate-100">
+        <span class="inline-block w-3.5 h-3.5 rounded-sm bg-fuchsia-500/50 border-2 border-fuchsia-300 flex-shrink-0"></span>
+        <span id="sampelWidgetTitle" class="font-semibold truncate flex-1 min-w-0">0 SLS Sampel</span>
+        <button id="btnSampelList" type="button" aria-label="Perbesar daftar sampel" title="Perbesar" class="h-11 px-3 rounded-xl text-sky-300 hover:bg-slate-800 text-sm font-medium transition flex items-center gap-1.5"><i data-lucide="maximize-2" class="w-4 h-4"></i><span>Perbesar</span></button>
+        <button id="btnSampelClear" type="button" aria-label="Hapus sorotan sampel" title="Hapus sorotan sampel" class="h-11 w-11 rounded-xl text-slate-400 hover:text-rose-300 hover:bg-slate-800 flex items-center justify-center transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
       </div>
 
     <!-- FLOATING EXCEL POINTS CONTROLS (Muncul jika titik Excel dimuat) -->
@@ -206,7 +152,7 @@
             </button>
           </div>
         </div>
-        <div class="flex items-center justify-between text-[11px] text-slate-300 bg-slate-800/80 px-2 py-1 rounded-xl">
+        <div class="flex items-center justify-between text-xs text-slate-300 bg-slate-800/80 px-2 py-1 rounded-xl">
           <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> <span id="excelWidgetInCount">0</span> Masuk</span>
           <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-400"></span> <span id="excelWidgetOutCount">0</span> Luar</span>
         </div>
@@ -216,18 +162,7 @@
         </button>
       </div>
     </div>
-    </div>
-
-    <!-- FLOATING MAP CONTROLS (BOTTOM RIGHT) -->
-    <div class="absolute bottom-6 right-3 sm:right-6 z-20 flex flex-col gap-2.5 items-end pointer-events-auto">
-      <!-- Tombol Home (Reset Selayar) -->
-      <button 
-        id="btnHome" 
-        class="w-11 h-11 bg-slate-900/95 backdrop-blur-md text-slate-200 hover:text-sky-400 hover:bg-slate-800 rounded-2xl shadow-xl border border-slate-700/80 flex items-center justify-center transition active:scale-95 group"
-        title="Kembali ke Tampilan Awal (Kepulauan Selayar)"
-      >
-        <i data-lucide="home" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
-      </button>
+     </div>
     </div>
 
     <!-- BOTTOM SHEET / DETAIL DRAWER -->
@@ -235,13 +170,13 @@
       id="bottomSheet" 
       class="bottom-sheet hidden-drawer absolute left-0 right-0 bottom-0 z-30 max-w-xl mx-auto p-3 sm:p-4 pointer-events-auto"
     >
-      <div class="bg-slate-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-700/80 overflow-hidden text-slate-100">
+      <div class="sheet-card bg-slate-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-700/80 overflow-hidden text-slate-100">
         <!-- Drawer Pull Handle -->
         <div class="flex justify-center pt-2.5 pb-1 cursor-pointer" id="drawerHandle">
           <div class="w-12 h-1.5 bg-slate-600 rounded-full"></div>
         </div>
 
-        <div class="px-4 pb-3 sm:px-6 sm:pb-5">
+        <div class="sheet-inner px-4 pb-3 sm:px-6 sm:pb-5">
           <!-- Header SLS Info -->
           <div id="drawerHeader" class="flex items-start justify-between gap-3 pb-2 cursor-pointer select-none">
             <div class="min-w-0 flex-1">
@@ -253,26 +188,21 @@
                   GPS ±5m
                 </span>
               </div>
-              <h2 id="slsName" class="text-base sm:text-lg font-bold text-slate-100 leading-snug truncate">
+              <h2 id="slsName" class="text-base sm:text-lg font-bold text-slate-100 leading-snug line-clamp-2 break-words">
                 Memuat Informasi...
               </h2>
-              <p id="slsDesaKec" class="text-xs sm:text-sm text-slate-400 font-medium mt-0.5 truncate">
+              <p id="slsDesaKec" class="text-xs sm:text-sm text-slate-400 font-medium mt-0.5 line-clamp-2 break-words">
                 Desa - Kecamatan
               </p>
             </div>
             <div class="flex items-center gap-1 flex-shrink-0">
-              <button 
-                id="btnToggleDrawer" 
-                class="text-slate-400 hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-800 transition active:scale-95" 
-                title="Sembunyikan / Tampilkan Detail"
-              >
+              <button id="btnMaximizeDrawer" type="button" class="sheet-max-btn w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800 transition active:scale-95" aria-label="Perbesar panel" title="Perbesar panel">
+                <i data-lucide="maximize-2" id="drawerMaxIcon" class="w-5 h-5"></i>
+              </button>
+              <button id="btnToggleDrawer" type="button" class="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-200 rounded-xl hover:bg-slate-800 transition active:scale-95" aria-label="Sembunyikan atau tampilkan detail" title="Sembunyikan / tampilkan detail">
                 <i data-lucide="chevron-down" id="drawerToggleIcon" class="w-5 h-5 transition-transform duration-200"></i>
               </button>
-              <button 
-                id="btnCloseDrawer" 
-                class="text-slate-400 hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-800 transition active:scale-95" 
-                title="Tutup Info"
-              >
+              <button id="btnCloseDrawer" type="button" class="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-200 rounded-xl hover:bg-slate-800 transition active:scale-95" aria-label="Tutup info" title="Tutup info">
                 <i data-lucide="x" class="w-5 h-5"></i>
               </button>
             </div>
@@ -292,11 +222,11 @@
             <div id="mitraSection" class="hidden my-2.5">
               <div class="flex items-center justify-between gap-2">
                 <h3 id="mitraSummary" class="text-sm font-bold text-slate-100">Mitra</h3>
-                <button id="btnCopyMitra" type="button" class="hidden px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] text-slate-200 flex items-center gap-1">
+                <button id="btnCopyMitra" type="button" class="hidden whitespace-nowrap px-2.5 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 flex items-center gap-1">
                   <i data-lucide="copy" class="w-3 h-3"></i>Salin daftar
                 </button>
               </div>
-              <p id="mitraSubSummary" class="text-[11px] text-slate-400 mt-0.5"></p>
+              <p id="mitraSubSummary" class="text-xs text-slate-400 mt-0.5"></p>
               <input id="mitraSearch" type="search" placeholder="Cari nama mitra..." class="hidden mt-2 w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-500 text-xs focus:ring-2 focus:ring-teal-500/50 focus:outline-none" />
               <div id="mitraList" class="mt-2 space-y-1.5"></div>
             </div>
@@ -305,7 +235,7 @@
             <!-- Grid Details -->
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 py-2.5 text-xs sm:text-sm">
               <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60">
-                <span class="text-slate-400 block text-[11px]">ID SLS</span>
+                <span class="text-slate-400 block text-xs">ID SLS</span>
                 <div class="flex items-center justify-between font-mono font-semibold text-slate-100 mt-0.5">
                   <span id="slsId" class="truncate">-</span>
                   <button id="btnCopyId" class="text-slate-400 hover:text-sky-400 p-0.5" title="Salin ID SLS">
@@ -315,14 +245,14 @@
               </div>
 
               <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60">
-                <span class="text-slate-400 block text-[11px]">Estimasi Luas</span>
+                <span class="text-slate-400 block text-xs">Estimasi Luas</span>
                 <span id="slsLuas" class="font-semibold text-slate-100 block mt-0.5 truncate">-</span>
               </div>
 
               <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60 col-span-2 sm:col-span-1">
-                <span class="text-slate-400 block text-[11px]">Koordinat Titik</span>
+                <span class="text-slate-400 block text-xs">Koordinat Titik</span>
                 <div class="flex items-center justify-between font-mono text-slate-100 mt-0.5">
-                  <span id="slsCoord" class="truncate text-[11px]">-</span>
+                  <span id="slsCoord" class="truncate text-xs">-</span>
                   <button id="btnCopyCoord" class="text-slate-400 hover:text-sky-400 p-0.5" title="Salin Koordinat">
                     <i data-lucide="copy" class="w-3.5 h-3.5"></i>
                   </button>
@@ -355,6 +285,30 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- MAP CONTAINER -->
+  <main class="relative flex-1 w-full h-full">
+    <div id="map"></div>
+
+    <!-- MAP CONTROLS: one column, bottom-right, rides above the detail sheet on phones -->
+    <div id="mapControls" class="absolute right-2 sm:right-3 z-20 flex flex-col gap-2 items-end pointer-events-auto">
+      <button id="btnGps" type="button" class="map-btn bg-primary hover:bg-primary-dark text-white border-sky-400/30" title="Deteksi lokasi saya (GPS)" aria-label="Deteksi lokasi saya (GPS)">
+        <i data-lucide="crosshair" id="gpsIcon" class="w-5 h-5"></i>
+      </button>
+      <button id="btnBasemap" type="button" class="map-btn" title="Pilih peta dasar" aria-label="Pilih peta dasar">
+        <i data-lucide="layers" class="w-5 h-5"></i>
+      </button>
+      <button id="btnHome" type="button" class="map-btn" title="Kembali ke tampilan awal Kepulauan Selayar" aria-label="Kembali ke tampilan awal">
+        <i data-lucide="home" class="w-5 h-5"></i>
+      </button>
+      <div class="zoom-btns flex flex-col gap-2">
+        <button id="btnZoomIn" type="button" class="map-btn" title="Perbesar" aria-label="Perbesar peta"><i data-lucide="plus" class="w-5 h-5"></i></button>
+        <button id="btnZoomOut" type="button" class="map-btn" title="Perkecil" aria-label="Perkecil peta"><i data-lucide="minus" class="w-5 h-5"></i></button>
+      </div>
+    </div>
+
+
     <!-- Minimalist Floating Reopen Pill (Muncul saat drawer ditutup tetapi SLS masih terpilih) -->
     <button 
       id="btnReopenDrawer" 
@@ -363,7 +317,7 @@
     >
       <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
       <span id="reopenSlsName" class="text-xs font-bold truncate max-w-[180px] sm:max-w-xs text-slate-100">Detail SLS</span>
-      <span class="text-[11px] font-semibold text-sky-400 flex items-center gap-0.5 ml-1 pl-2 border-l border-slate-700">
+      <span class="text-xs font-semibold text-sky-400 flex items-center gap-0.5 ml-1 pl-2 border-l border-slate-700">
         Buka <i data-lucide="chevron-up" class="w-3.5 h-3.5 transition-transform group-hover:-translate-y-0.5"></i>
       </span>
     </button>
@@ -508,7 +462,7 @@
             </div>
             <div class="min-w-0">
               <div class="text-xs font-bold text-slate-100">Banyak Titik Sekaligus?</div>
-              <div class="text-[11px] text-slate-400 truncate">Upload file Excel (.xlsx / .csv)</div>
+              <div class="text-xs text-slate-400 truncate">Upload file Excel (.xlsx / .csv)</div>
             </div>
           </div>
           <button 
@@ -530,12 +484,12 @@
             placeholder="Contoh: -6.49178, 120.48547" 
             class="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-500 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none font-mono"
           />
-          <p class="text-[11px] text-slate-400 mt-1">Mendukung format paste `Latitude, Longitude` sekaligus.</p>
+          <p class="text-xs text-slate-400 mt-1">Mendukung format paste `Latitude, Longitude` sekaligus.</p>
         </div>
 
         <div class="relative flex items-center justify-center">
           <div class="border-t border-slate-800 w-full"></div>
-          <span class="bg-slate-900 px-2 text-[11px] text-slate-400 uppercase font-semibold">atau input manual</span>
+          <span class="bg-slate-900 px-2 text-xs text-slate-400 uppercase font-semibold">atau input manual</span>
           <div class="border-t border-slate-800 w-full"></div>
         </div>
 
@@ -564,7 +518,7 @@
 
         <!-- Contoh Titik Cepat -->
         <div>
-          <span class="text-[11px] font-semibold text-slate-400 block mb-1">Contoh Titik Sampel:</span>
+          <span class="text-xs font-semibold text-slate-400 block mb-1">Contoh Titik Sampel:</span>
           <div class="flex flex-wrap gap-1.5">
             <button class="sample-coord-btn px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 font-mono transition" data-lat="-6.1215" data-lng="120.4623">
               Kota Benteng
@@ -591,7 +545,7 @@
 
   <!-- MODAL: UPLOAD DAFTAR SLS SAMPEL -->
   <div id="modalSampel" class="modal-overlay hidden-modal fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm">
-    <div class="bg-slate-900 rounded-3xl shadow-2xl border border-slate-700/80 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden text-slate-100">
+    <div class="bg-slate-900 rounded-3xl shadow-2xl border border-slate-700/80 w-full max-w-xl max-h-[90dvh] flex flex-col overflow-hidden text-slate-100">
       <div class="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 flex-shrink-0">
         <div class="flex items-center gap-2.5">
           <div class="w-9 h-9 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/30 flex items-center justify-center text-fuchsia-300 flex-shrink-0">
@@ -602,9 +556,14 @@
             <p class="text-xs text-slate-400 mt-0.5">SLS sampel di file Excel langsung disorot di peta</p>
           </div>
         </div>
-        <button id="btnCloseSampelModal" type="button" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-800 transition" aria-label="Tutup">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
+        <div class="flex items-center gap-1 flex-shrink-0">
+          <button id="btnMinimizeSampel" type="button" class="hidden w-11 h-11 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-800 transition flex items-center justify-center" aria-label="Perkecil ke peta" title="Perkecil ke peta">
+            <i data-lucide="minimize-2" class="w-5 h-5"></i>
+          </button>
+          <button id="btnCloseSampelModal" type="button" class="w-11 h-11 text-slate-400 hover:text-slate-200 rounded-xl hover:bg-slate-800 transition flex items-center justify-center" aria-label="Tutup">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
       </div>
 
       <div class="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
@@ -644,19 +603,19 @@
         </div>
       </div>
 
-      <div id="sampelFooter" class="hidden p-4 sm:p-5 border-t border-slate-800 flex items-center gap-2 flex-shrink-0">
-        <button id="btnSampelViewMap" type="button" class="flex-1 h-11 bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-semibold text-sm rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2">
+      <div id="sampelFooter" class="hidden p-4 sm:p-5 border-t border-slate-800 flex flex-wrap items-center gap-2 flex-shrink-0">
+        <button id="btnSampelViewMap" type="button" class="basis-full sm:basis-0 sm:flex-1 h-11 bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-semibold text-sm rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2">
           <i data-lucide="map" class="w-4 h-4"></i><span>Lihat di Peta</span>
         </button>
-        <button id="btnSampelReplace" type="button" class="h-11 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium text-sm rounded-xl transition">Ganti file</button>
-        <button id="btnSampelClear2" type="button" class="h-11 px-4 bg-slate-800 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 border border-slate-700 font-medium text-sm rounded-xl transition">Hapus</button>
+        <button id="btnSampelReplace" type="button" class="flex-1 sm:flex-none h-11 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium text-sm rounded-xl transition">Ganti file</button>
+        <button id="btnSampelClear2" type="button" class="flex-1 sm:flex-none h-11 px-4 bg-slate-800 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 border border-slate-700 font-medium text-sm rounded-xl transition">Hapus</button>
       </div>
     </div>
   </div>
 
   <!-- MODAL: UPLOAD EXCEL / CSV KOORDINAT -->
   <div id="modalExcel" class="modal-overlay hidden-modal fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm">
-    <div class="bg-slate-900 rounded-3xl shadow-2xl border border-slate-700/80 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 text-slate-100">
+    <div class="bg-slate-900 rounded-3xl shadow-2xl border border-slate-700/80 w-full max-w-xl max-h-[90dvh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 text-slate-100">
       <!-- Modal Header -->
       <div class="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 flex-shrink-0">
         <div class="flex items-center gap-2.5">
@@ -708,20 +667,20 @@
               <i data-lucide="sliders" class="w-4 h-4 text-emerald-400"></i>
               Pemetaan Kolom (Auto-Detected)
             </span>
-            <span id="excelFileMeta" class="text-[11px] text-slate-400 truncate max-w-[180px]">file.xlsx</span>
+            <span id="excelFileMeta" class="text-xs text-slate-400 truncate max-w-[180px]">file.xlsx</span>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div>
-              <label class="block text-[11px] font-semibold text-slate-300 mb-1">Kolom Latitude (Y) *</label>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Kolom Latitude (Y) *</label>
               <select id="selectLatCol" class="w-full px-2.5 py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-100 text-xs focus:ring-1 focus:ring-emerald-500"></select>
             </div>
             <div>
-              <label class="block text-[11px] font-semibold text-slate-300 mb-1">Kolom Longitude (X) *</label>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Kolom Longitude (X) *</label>
               <select id="selectLngCol" class="w-full px-2.5 py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-100 text-xs focus:ring-1 focus:ring-emerald-500"></select>
             </div>
             <div>
-              <label class="block text-[11px] font-semibold text-slate-300 mb-1">Kolom Nama / Label</label>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Kolom Nama / Label</label>
               <select id="selectLabelCol" class="w-full px-2.5 py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-100 text-xs focus:ring-1 focus:ring-emerald-500"></select>
             </div>
           </div>
@@ -740,15 +699,15 @@
           <!-- Summary Badges -->
           <div class="grid grid-cols-3 gap-2 text-center">
             <div class="bg-slate-800/90 border border-slate-700/80 p-2.5 rounded-xl">
-              <span class="text-[11px] text-slate-400 block">Total Titik</span>
+              <span class="text-xs text-slate-400 block">Total Titik</span>
               <span id="statTotalPoints" class="text-base font-bold text-slate-100">0</span>
             </div>
             <div class="bg-emerald-950/40 border border-emerald-800/50 p-2.5 rounded-xl">
-              <span class="text-[11px] text-emerald-400 block">Masuk SLS</span>
+              <span class="text-xs text-emerald-400 block">Masuk SLS</span>
               <span id="statInPoints" class="text-base font-bold text-emerald-300">0</span>
             </div>
             <div class="bg-rose-950/40 border border-rose-800/50 p-2.5 rounded-xl">
-              <span class="text-[11px] text-rose-400 block">Luar Wilayah</span>
+              <span class="text-xs text-rose-400 block">Luar Wilayah</span>
               <span id="statOutPoints" class="text-base font-bold text-rose-300">0</span>
             </div>
           </div>
@@ -763,7 +722,7 @@
           <!-- Scrollable Table -->
           <div class="border border-slate-800 rounded-xl overflow-hidden max-h-56 overflow-y-auto">
             <table class="w-full text-left text-xs text-slate-200">
-              <thead class="bg-slate-800/80 text-slate-400 sticky top-0 text-[11px]">
+              <thead class="bg-slate-800/80 text-slate-400 sticky top-0 text-xs">
                 <tr>
                   <th class="p-2">#</th>
                   <th class="p-2">Label</th>
@@ -859,7 +818,7 @@
   </div>
 
   <!-- TOAST NOTIFICATIONS CONTAINER -->
-  <div id="toastContainer" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none w-full max-w-sm px-4">
+  <div id="toastContainer" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[60] flex flex-col-reverse items-center gap-2 pointer-events-none w-full max-w-sm px-4">
     <!-- Dynamically added toasts -->
   </div>
 

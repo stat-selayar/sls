@@ -36,6 +36,7 @@ const state = {
   mitraDesaCounts: new Map(),
   mitraSource: '',
   currentMitraRows: [],
+  mitraBannerCollapsed: false,
   // Sample SLS upload
   sampel: null, // { fileName, entries, matched, failed }
   sampelLayer: null
@@ -66,6 +67,7 @@ const DOM = {
   drawerHandle: document.getElementById('drawerHandle'),
   drawerHeader: document.getElementById('drawerHeader'),
   btnToggleDrawer: document.getElementById('btnToggleDrawer'),
+  btnMaximizeDrawer: document.getElementById('btnMaximizeDrawer'),
   drawerToggleIcon: document.getElementById('drawerToggleIcon'),
   drawerBody: document.getElementById('drawerBody'),
   btnReopenDrawer: document.getElementById('btnReopenDrawer'),
@@ -141,8 +143,11 @@ const DOM = {
   mitraBanner: document.getElementById('mitraBanner'),
   mitraBannerText: document.getElementById('mitraBannerText'),
   mitraLegend: document.getElementById('mitraLegend'),
-  btnExitMitra: document.getElementById('btnExitMitra'),
   btnLoadMitra: document.getElementById('btnLoadMitra'),
+  btnToggleMitraBanner: document.getElementById('btnToggleMitraBanner'),
+  btnMinimizeSampel: document.getElementById('btnMinimizeSampel'),
+  btnZoomIn: document.getElementById('btnZoomIn'),
+  btnZoomOut: document.getElementById('btnZoomOut'),
   btnLoadMitraLabel: document.getElementById('btnLoadMitraLabel'),
   mitraFileInput: document.getElementById('mitraFileInput'),
   mitraDataMeta: document.getElementById('mitraDataMeta'),
@@ -192,12 +197,10 @@ function initMap() {
   state.map = L.map('map', {
     center: defaultCenter,
     zoom: defaultZoom,
-    zoomControl: true,
+    zoomControl: false,
     preferCanvas: true // High performance rendering for 700+ multipolygons
   });
 
-  // Reposition zoom control to top-left on mobile and desktop
-  state.map.zoomControl.setPosition('topleft');
 
   // Define Tile Layers with multi-subdomain support for high concurrency on iOS Safari
   state.basemapLayers = {
@@ -679,7 +682,37 @@ function highlightMultipleFeatures(features, label) {
   showToast(`Menampilkan & highlight ${label} (${features.length} SLS)`, 'info');
 }
 
+const WIDE_LAYOUT = window.matchMedia('(min-width: 768px) and (min-height: 501px)');
+
+/** Keep the map buttons just above the bottom sheet (phones only; wide layouts dock the sheet left). */
+function syncSheetHeight() {
+  const shown = DOM.bottomSheet.classList.contains('show-drawer');
+  const h = shown && !WIDE_LAYOUT.matches ? DOM.bottomSheet.getBoundingClientRect().height : 0;
+  document.documentElement.style.setProperty('--sheet-h', `${Math.round(h)}px`);
+}
+
+/** lucide.createIcons() swaps <i> for <svg>, so a kept reference goes stale: rebuild the tag by id. */
+function setLucideIcon(id, name) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const i = document.createElement('i');
+  i.id = id;
+  i.className = el.getAttribute('class') || '';
+  i.setAttribute('data-lucide', name);
+  el.replaceWith(i);
+  lucide.createIcons();
+}
+
+function setDrawerMaximized(on) {
+  DOM.bottomSheet.classList.toggle('is-maximized', on);
+  document.body.classList.toggle('sheet-max', on);
+  DOM.btnMaximizeDrawer.setAttribute('aria-label', on ? 'Kecilkan panel' : 'Perbesar panel');
+  DOM.btnMaximizeDrawer.title = on ? 'Kecilkan panel' : 'Perbesar panel';
+  setLucideIcon('drawerMaxIcon', on ? 'minimize-2' : 'maximize-2');
+}
+
 function openDrawer(minimized = false) {
+  document.body.classList.add('drawer-open');
   hideReopenPill();
   DOM.bottomSheet.classList.remove('hidden-drawer');
   DOM.bottomSheet.classList.add('show-drawer');
@@ -691,6 +724,8 @@ function openDrawer(minimized = false) {
 }
 
 function closeDrawer(clearPill = false) {
+  setDrawerMaximized(false);
+  document.body.classList.remove('drawer-open');
   DOM.bottomSheet.classList.remove('show-drawer');
   DOM.bottomSheet.classList.add('hidden-drawer');
   if (clearPill || !state.selectedFeature) {
@@ -701,21 +736,18 @@ function closeDrawer(clearPill = false) {
 }
 
 function minimizeDrawer() {
+  setDrawerMaximized(false);
+  document.body.classList.remove('drawer-open');
   state.isDrawerMinimized = true;
   DOM.bottomSheet.classList.add('is-minimized');
-  if (DOM.drawerToggleIcon) {
-    DOM.drawerToggleIcon.setAttribute('data-lucide', 'chevron-up');
-    lucide.createIcons();
-  }
+  setLucideIcon('drawerToggleIcon', 'chevron-up');
 }
 
 function expandDrawer() {
+  document.body.classList.add('drawer-open');
   state.isDrawerMinimized = false;
   DOM.bottomSheet.classList.remove('is-minimized');
-  if (DOM.drawerToggleIcon) {
-    DOM.drawerToggleIcon.setAttribute('data-lucide', 'chevron-down');
-    lucide.createIcons();
-  }
+  setLucideIcon('drawerToggleIcon', 'chevron-down');
 }
 
 function toggleDrawerMinimize() {
@@ -1365,6 +1397,11 @@ function initClipboardActions() {
   // Drawer Interactive Controls (Minimalist Hide/Show & Reopen)
   DOM.btnCloseDrawer.addEventListener('click', () => closeDrawer(false));
   
+  DOM.btnMaximizeDrawer.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (state.isDrawerMinimized) expandDrawer();
+    setDrawerMaximized(!DOM.bottomSheet.classList.contains('is-maximized'));
+  });
   if (DOM.btnToggleDrawer) {
     DOM.btnToggleDrawer.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -2200,8 +2237,11 @@ function readWorkbookSheets(file) {
  */
 function initMitra() {
   DOM.btnToggleMitra.addEventListener('click', () => (state.mitraMode ? exitMitraMode() : enterMitraMode()));
-  DOM.btnExitMitra.addEventListener('click', exitMitraMode);
   DOM.btnLoadMitra.addEventListener('click', () => DOM.mitraFileInput.click());
+  DOM.btnToggleMitraBanner.addEventListener('click', () => {
+    state.mitraBannerCollapsed = !state.mitraBannerCollapsed;
+    updateMitraUi();
+  });
   DOM.mitraFileInput.addEventListener('change', (e) => {
     const file = e.target.files && e.target.files[0];
     if (file) handleMitraFile(file);
@@ -2244,15 +2284,28 @@ function updateMitraUi() {
   const loaded = state.mitraList.length > 0;
   DOM.btnToggleMitra.setAttribute('aria-pressed', String(on));
   DOM.btnToggleMitraLabel.textContent = on ? 'Keluar Cek Mitra' : 'Cek Mitra';
-  DOM.btnToggleMitra.classList.toggle('ring-2', on);
-  DOM.btnToggleMitra.classList.toggle('ring-teal-300', on);
   DOM.mitraBanner.classList.toggle('hidden', !on);
   DOM.mitraLegend.classList.toggle('hidden', !loaded);
-  DOM.mitraBannerText.textContent = loaded
-    ? 'Mode Cek Mitra aktif. Ketuk wilayah di peta untuk melihat mitranya.'
-    : 'Mode Cek Mitra aktif. Muat data mitra dulu, lalu ketuk wilayah di peta.';
-  DOM.btnLoadMitraLabel.textContent = loaded ? 'Ganti Data Mitra' : 'Muat Data Mitra';
-  DOM.mitraDataMeta.textContent = loaded ? `${state.mitraList.length} mitra · ${state.mitraSource}` : '';
+  const collapsed = state.mitraBannerCollapsed;
+  DOM.mitraBanner.classList.toggle('is-collapsed', collapsed);
+  DOM.btnToggleMitraBanner.setAttribute('aria-expanded', String(!collapsed));
+  DOM.btnToggleMitraBanner.setAttribute('aria-label', collapsed ? 'Perbesar panel Cek Mitra' : 'Perkecil panel Cek Mitra');
+  DOM.btnToggleMitraBanner.title = collapsed ? 'Perbesar' : 'Perkecil';
+  setLucideIcon('mitraBannerIcon', collapsed ? 'chevron-down' : 'chevron-up');
+  if (collapsed) {
+    DOM.mitraBannerText.textContent = loaded ? `Cek Mitra aktif · ${state.mitraList.length} mitra` : 'Cek Mitra aktif · data belum dimuat';
+  } else {
+    DOM.mitraBannerText.textContent = loaded
+      ? 'Ketuk wilayah di peta untuk melihat mitranya.'
+      : 'Muat data mitra dulu, lalu ketuk wilayah di peta.';
+  }
+  DOM.btnLoadMitraLabel.textContent = loaded ? 'Ganti Data' : 'Muat Data Mitra';
+  DOM.btnLoadMitra.classList.toggle('bg-slate-700', loaded);
+  DOM.btnLoadMitra.classList.toggle('hover:bg-slate-600', loaded);
+  DOM.btnLoadMitra.classList.toggle('bg-teal-600', !loaded);
+  DOM.btnLoadMitra.classList.toggle('hover:bg-teal-500', !loaded);
+  DOM.mitraDataMeta.classList.toggle('hidden', !loaded);
+  DOM.mitraDataMeta.textContent = loaded ? `${state.mitraList.length} mitra dari ${state.mitraSource}` : '';
 }
 
 function setMitraData(list, source) {
@@ -2416,6 +2469,7 @@ function initSampel() {
     openModalEl(DOM.modalSampel);
   });
   DOM.btnCloseSampelModal.addEventListener('click', () => closeModalEl(DOM.modalSampel));
+  DOM.btnMinimizeSampel.addEventListener('click', () => closeModalEl(DOM.modalSampel));
   DOM.btnSampelList.addEventListener('click', () => {
     showSampelView('result');
     openModalEl(DOM.modalSampel);
@@ -2461,6 +2515,7 @@ function showSampelView(view) {
   DOM.sampelUploadSection.classList.toggle('hidden', !!result);
   DOM.sampelResultSection.classList.toggle('hidden', !result);
   DOM.sampelFooter.classList.toggle('hidden', !result);
+  DOM.btnMinimizeSampel.classList.toggle('hidden', !result);
   if (!result) hideSampelError();
 }
 
@@ -2516,9 +2571,6 @@ async function handleSampelFile(file) {
   plotSampel();
   renderSampelResult();
   showSampelView('result');
-  if (matched.length > 0) {
-    showToast(`${matched.length} dari ${state.sampel.total} SLS sampel ditemukan.`, 'success');
-  }
   if (state.selectedFeature) renderSampelInfo(state.selectedFeature);
 }
 
@@ -2666,6 +2718,14 @@ function initApp() {
   // Controls event listeners
   DOM.btnGps.addEventListener('click', handleGeolocation);
   DOM.btnHome.addEventListener('click', handleHomeButton);
+  DOM.btnZoomIn.addEventListener('click', () => state.map.zoomIn());
+  DOM.btnZoomOut.addEventListener('click', () => state.map.zoomOut());
+
+  // Keep the map buttons above the bottom sheet as it opens, closes or resizes
+  if (window.ResizeObserver) new ResizeObserver(syncSheetHeight).observe(DOM.bottomSheet);
+  new MutationObserver(syncSheetHeight).observe(DOM.bottomSheet, { attributes: true, attributeFilter: ['class'] });
+  WIDE_LAYOUT.addEventListener('change', syncSheetHeight);
+  syncSheetHeight();
 
   // Load geojson data
   loadGeoJsonData();
