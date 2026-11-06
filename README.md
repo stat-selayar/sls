@@ -35,6 +35,16 @@ WebGIS modern, cepat, dan ringan berbasis static HTML/JS untuk mendeteksi posisi
 9. **Dukungan PWA & Offline-Ready**:
    - Dilengkapi `manifest.json` dan `sw.js` (Service Worker) agar aset peta dan data GeoJSON tersimpan di cache lokal saat berada di area tanpa sinyal seluler (*blank spot*).
 
+10. **Cek Mitra (peta OpenStreetMap)**:
+   - Tombol **Cek Mitra** mengganti peta ke OpenStreetMap dan menyorot desa yang punya mitra. Ketuk sebuah SLS untuk melihat daftar mitra beserta tingkat kecocokannya: *Tepat di SLS ini*, *Dusun cocok*, atau *Di desa ini*.
+   - Sumber data mitra tidak ada di repositori. Pengguna memuat file Excel daftar mitra lewat tombol **Muat Data Mitra**; file dibaca di peramban dan tidak dikirim ke mana pun. Hanya kolom yang aman dipakai (nama, posisi, alamat detail, pengalaman). Nomor telepon, email, tanggal lahir, SOBAT ID, dan NIK tidak pernah dimuat.
+   - Data belum mencatat RT/SLS tiap mitra. Tambahkan kolom **ID SLS** (14 digit) di sheet mitra agar mitra muncul sebagai *Tepat di SLS ini*.
+   - Untuk memuat data otomatis dari sheet yang sudah dipublikasikan (CSV, hanya kolom aman), isi konstanta `MITRA_DATA_URL` di `app.js`.
+11. **Upload SLS Sampel (Excel DSLS)**:
+   - Tombol **Upload Sampel** menerima file daftar sampel SLS (`.xlsx`, `.xls`, `.csv`) dan langsung menyorot semua polygon sampel, lengkap dengan ringkasan "N dari M ditemukan", daftar baris yang gagal dicocokkan (bisa diunduh), dan daftar SLS sampel yang bisa diketuk untuk zoom.
+   - Format DSLS asli dibaca apa adanya: judul di atas tabel, kode SLS tanpa nol di depan, baris total, dan header kedua diabaikan. Workbook dengan beberapa tab dipilih otomatis. Template minimal tersedia di dalam aplikasi.
+   - Pencocokan memakai kode kecamatan + desa + SLS, bukan properti `idsls` di GeoJSON (3 fitur memiliki `idsls` yang tidak konsisten dengan kode SLS-nya).
+
 ---
 
 ## 📂 Struktur Proyek
@@ -52,6 +62,16 @@ SLSelayar/
 └── .github/
     └── workflows/
         └── deploy.yml             # Otomasi deployment GitHub Pages via GitHub Actions
+```
+
+---
+
+## 🧪 Menjalankan Tes
+
+Fungsi pembaca DSLS dan pencocok mitra ada di `lib/slslib.js` dan diuji dengan pelari tes bawaan Node:
+
+```bash
+node --test test/
 ```
 
 ---
